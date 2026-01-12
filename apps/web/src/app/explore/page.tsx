@@ -60,11 +60,14 @@ export default function ExplorePage() {
   const topVaults = filteredAndSortedPools.slice(0, 3);
 
   return (
-    <div className="space-y-8">
-      <Nav />
-      <header className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold">Explore</h1>
-      </header>
+    <div className="min-h-screen">
+      <div className="max-w-7xl mx-auto px-4 py-6">
+        <Nav />
+      </div>
+      <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
+        <header className="flex flex-col gap-2">
+          <h1 className="text-3xl font-bold">Explore</h1>
+        </header>
 
       {/* Top Vaults Section */}
       <section>
@@ -313,6 +316,7 @@ export default function ExplorePage() {
           </div>
         )}
       </section>
+      </div>
     </div>
   );
 }
