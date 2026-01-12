@@ -475,16 +475,14 @@ export default function Page() {
                     false, // public pool
                     address,
                     managerName,
-                  poolName,
-                  symbol,
-                  BigInt(feeNum),
-                  BigInt(mgmtNum),
-                  assets,
-                  BigInt(entryNum),
-                  BigInt(exitNum),
-                ],
-                chainId: 137,
-              });
+                    poolName,
+                    symbol,
+                    BigInt(feeNum),
+                    BigInt(mgmtNum),
+                    assets,
+                  ],
+                  chainId: 137,
+                });
                 setCreateStatus(`Tx sent: ${txHash}`);
               } catch (err: any) {
                 setCreateStatus(err?.message || "Error");
