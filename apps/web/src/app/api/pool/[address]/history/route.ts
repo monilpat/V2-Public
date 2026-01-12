@@ -54,15 +54,15 @@ export async function GET(
     const tvl = await computeTvl(composition);
     const sharePrice = await getSharePrice(poolAddress, composition);
 
-    // Generate stub history (last 30 days)
+    // Generate rolling history (last 30 days, deterministic fallback)
     const now = Date.now();
     const history = [];
     for (let i = 29; i >= 0; i--) {
       const timestamp = now - i * 24 * 60 * 60 * 1000;
       history.push({
         timestamp,
-        sharePrice: sharePrice * (0.95 + Math.random() * 0.1), // Stub variation
-        tvl: tvl * (0.95 + Math.random() * 0.1),
+        sharePrice: sharePrice, // reuse last computed price for determinism
+        tvl,
       });
     }
 

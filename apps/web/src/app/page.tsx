@@ -342,6 +342,7 @@ export default function Page() {
   const [poolName, setPoolName] = useState("");
   const [symbol, setSymbol] = useState("");
   const [fee, setFee] = useState("0");
+  const [mgmtFee, setMgmtFee] = useState("0");
   const [supportedAssets, setSupportedAssets] = useState<string[]>([]);
   const [createStatus, setCreateStatus] = useState<string | null>(null);
   const { writeContractAsync: writeFactory } = useWriteContract();
@@ -399,9 +400,15 @@ export default function Page() {
             value={fee}
             onChange={(e) => setFee(e.target.value)}
           />
+          <input
+            className="bg-white/5 rounded-lg px-3 py-2"
+            placeholder="Management fee numerator (<= 300)"
+            value={mgmtFee}
+            onChange={(e) => setMgmtFee(e.target.value)}
+          />
         </div>
         <div className="space-y-2">
-          <div className="text-sm text-muted">Supported deposit assets (comma separated addresses)</div>
+          <div className="text-sm text-muted">Supported deposit assets (comma separated addresses, max 12)</div>
           <input
             className="bg-white/5 rounded-lg px-3 py-2 text-sm w-full"
             placeholder="0x...,0x...,0x..."
@@ -417,6 +424,11 @@ export default function Page() {
                 setCreateStatus("Fee exceeds cap");
                 return;
               }
+              const mgmtNum = Number(mgmtFee || "0");
+              if (mgmtNum > 300) {
+                setCreateStatus("Management fee exceeds cap (3%)");
+                return;
+              }
               if (!managerName || !poolName || !symbol || supportedAssets.length === 0) {
                 setCreateStatus("Fill all fields");
                 return;
@@ -426,6 +438,10 @@ export default function Page() {
                 return;
               }
               try {
+                if (supportedAssets.length > 12) {
+                  setCreateStatus("Max 12 assets");
+                  return;
+                }
                 setCreateStatus("Signing createFund...");
                 const assets = supportedAssets.map((a) => ({
                   asset: a as `0x${string}`,
@@ -442,7 +458,7 @@ export default function Page() {
                     poolName,
                     symbol,
                     BigInt(feeNum),
-                    0n, // manager fee numerator
+                    BigInt(mgmtNum),
                     assets,
                   ],
                   chainId: 137,

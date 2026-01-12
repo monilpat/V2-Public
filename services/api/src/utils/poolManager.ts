@@ -42,26 +42,33 @@ export const getManagerAndTrader = async (poolAddress: string): Promise<{ manage
 
 export const getPoolFees = async (poolAddress: string): Promise<{
   performanceFee: number;
+  managementFee: number;
+  entryFee: number;
+  exitFee: number;
   exitCooldown: number;
 }> => {
   try {
     const managerLogicAddress = await getPoolManagerLogic(poolAddress);
     if (!managerLogicAddress || managerLogicAddress === ethers.constants.AddressZero) {
-      return { performanceFee: 0, exitCooldown: 24 * 60 * 60 };
+      return { performanceFee: 0, managementFee: 0, entryFee: 0, exitFee: 0, exitCooldown: 24 * 60 * 60 };
     }
 
     const managerContract = new ethers.Contract(managerLogicAddress, PoolManagerLogicAbi, provider);
-    const [performanceFeeNumerator, , , , denominator] = await managerContract.getFee().catch(() => [0, 0, 0, 0, 10000]);
+    const [performanceFeeNumerator, managerFeeNumerator, entryFeeNumerator, exitFeeNumerator, denominator] =
+      await managerContract.getFee().catch(() => [0, 0, 0, 0, 10000]);
     
     // Get exit cooldown from factory (would need factory ABI)
     const exitCooldown = 24 * 60 * 60; // Default 1 day, can be enhanced
 
     return {
       performanceFee: denominator > 0 ? (Number(performanceFeeNumerator) / Number(denominator)) * 100 : 0,
+      managementFee: denominator > 0 ? (Number(managerFeeNumerator) / Number(denominator)) * 100 : 0,
+      entryFee: denominator > 0 ? (Number(entryFeeNumerator) / Number(denominator)) * 100 : 0,
+      exitFee: denominator > 0 ? (Number(exitFeeNumerator) / Number(denominator)) * 100 : 0,
       exitCooldown,
     };
   } catch (e) {
     console.warn(`Failed to get fees for ${poolAddress}:`, e);
-    return { performanceFee: 0, exitCooldown: 24 * 60 * 60 };
+    return { performanceFee: 0, managementFee: 0, entryFee: 0, exitFee: 0, exitCooldown: 24 * 60 * 60 };
   }
 };

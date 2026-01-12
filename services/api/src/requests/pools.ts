@@ -7,11 +7,9 @@ import { ethers } from "ethers";
 import { fetchPriceUSD } from "../utils/prices";
 import { getManagerAndTrader, getPoolFees } from "../utils/poolManager";
 import { formatUnits } from "ethers/lib/utils";
+import { getHistory, recordPoint } from "../utils/historyCache";
 
 const poolsRouter = Router();
-
-// In-memory cache for share price history (for MVP)
-const sharePriceCache = new Map<string, { timestamp: number; sharePrice: number; tvl: number }[]>();
 
 // Helper to compute TVL from composition using real prices
 const computeTvl = async (composition: any[]): Promise<number> => {
@@ -60,20 +58,32 @@ poolsRouter.get("/pools", async (req: Request, res: Response) => {
           const contract = new ethers.Contract(addr, erc20, provider);
           const [name, symbol] = await Promise.all([contract.name(), contract.symbol()]);
           
-          // Basic metrics (stub for now)
           const pool = await dhedge(network).loadPool(addr);
           const composition = await pool.getComposition();
           const tvl = await computeTvl(composition);
-          
+          const sharePrice = await getSharePrice(addr, composition, provider);
+          const history = getHistory(addr);
+          const now = Date.now();
+          const oneDayAgo = now - 24 * 60 * 60 * 1000;
+          const oneWeekAgo = now - 7 * 24 * 60 * 60 * 1000;
+          const oneMonthAgo = now - 30 * 24 * 60 * 60 * 1000;
+          const price24h = history.find((h) => h.timestamp >= oneDayAgo)?.sharePrice || sharePrice;
+          const price1w = history.find((h) => h.timestamp >= oneWeekAgo)?.sharePrice || sharePrice;
+          const price1m = history.find((h) => h.timestamp >= oneMonthAgo)?.sharePrice || sharePrice;
+          const returns24h = price24h > 0 ? ((sharePrice - price24h) / price24h) * 100 : 0;
+          const returns1w = price1w > 0 ? ((sharePrice - price1w) / price1w) * 100 : 0;
+          const returns1m = price1m > 0 ? ((sharePrice - price1m) / price1m) * 100 : 0;
+          recordPoint(addr, { timestamp: now, sharePrice, tvl });
+
           return {
             address: addr,
             name,
             symbol,
             tvl,
-            returns24h: 0, // Stub
-            returns1w: 0, // Stub
-            returns1m: 0, // Stub
-            riskScore: Math.floor(Math.random() * 100), // Stub: random 0-100
+            returns24h,
+            returns1w,
+            returns1m,
+            riskScore: 0, // computed in metrics endpoint; keep 0 here
             network,
           };
         } catch (_) {
@@ -121,7 +131,7 @@ poolsRouter.get("/pool/:address/metrics", async (req: Request, res: Response) =>
     const sharePrice = await getSharePrice(poolAddress, composition, provider);
 
     // Get history from cache or generate stub
-    const history = sharePriceCache.get(poolAddress) || [];
+    const history = getHistory(poolAddress);
     const now = Date.now();
     const oneDayAgo = now - 24 * 60 * 60 * 1000;
     const oneWeekAgo = now - 7 * 24 * 60 * 60 * 1000;
@@ -137,12 +147,11 @@ poolsRouter.get("/pool/:address/metrics", async (req: Request, res: Response) =>
 
     // Update cache with current price
     const currentEntry = { timestamp: now, sharePrice, tvl };
-    const updatedHistory = [...history.filter((h) => h.timestamp > oneMonthAgo), currentEntry].slice(-30);
-    sharePriceCache.set(poolAddress, updatedHistory);
+    const updatedHistory = recordPoint(poolAddress, currentEntry);
 
     // Get trader/manager from PoolManagerLogic
     const { manager, trader } = await getManagerAndTrader(poolAddress);
-    const { performanceFee, exitCooldown } = await getPoolFees(poolAddress);
+    const { performanceFee, managementFee, entryFee, exitFee, exitCooldown } = await getPoolFees(poolAddress);
 
     // Calculate risk score based on volatility (simplified)
     let riskScore = 50; // Default medium risk
@@ -174,6 +183,9 @@ poolsRouter.get("/pool/:address/metrics", async (req: Request, res: Response) =>
         trader,
         manager,
         performanceFee,
+        managementFee,
+        entryFee,
+        exitFee,
         exitCooldown,
       },
     });
@@ -192,27 +204,10 @@ poolsRouter.get("/pool/:address/history", async (req: Request, res: Response) =>
     const tvl = await computeTvl(composition);
     const sharePrice = await getSharePrice(poolAddress, composition, provider);
 
-    // Get or generate history
-    let history = sharePriceCache.get(poolAddress) || [];
-    
-    // If cache is empty, generate stub history (last 30 days)
-    if (history.length === 0) {
-      const now = Date.now();
-      for (let i = 29; i >= 0; i--) {
-        const timestamp = now - i * 24 * 60 * 60 * 1000;
-        history.push({
-          timestamp,
-          sharePrice: sharePrice * (0.95 + Math.random() * 0.1), // Stub: random variation
-          tvl: tvl * (0.95 + Math.random() * 0.1),
-        });
-      }
-      sharePriceCache.set(poolAddress, history);
-    } else {
-      // Update with current price
-      const currentEntry = { timestamp: Date.now(), sharePrice, tvl };
-      history = [...history, currentEntry].slice(-30);
-      sharePriceCache.set(poolAddress, history);
-    }
+    // Get persisted history and append latest point
+    let history = getHistory(poolAddress);
+    const currentEntry = { timestamp: Date.now(), sharePrice, tvl };
+    history = recordPoint(poolAddress, currentEntry);
 
     res.status(200).send({
       status: "success",

@@ -13,6 +13,10 @@ import { RiskScoreBadge } from "@/components/RiskScoreBadge";
 import { TradeHistoryTable } from "@/components/TradeHistoryTable";
 import { fetchPoolMetrics, fetchPoolHistory, fetchPoolTrades } from "@/lib/metrics";
 import { polygonConfig } from "@/lib/polygon";
+import { useWriteContract, useReadContract } from "wagmi";
+import { poolLogicAbi, poolManagerLogicAbi } from "@/lib/abi";
+import { useToast } from "@/components/toast";
+import { useState } from "react";
 
 const fetchComposition = async (pool: string) => {
   const res = await axios.get(`${API_BASE}/poolComposition`, { params: { pool } });
@@ -22,6 +26,19 @@ const fetchComposition = async (pool: string) => {
 export default function PoolPage() {
   const params = useParams<{ address: string }>();
   const poolAddress = params.address as string;
+  const { Toast, push } = useToast();
+  const { writeContractAsync } = useWriteContract();
+  const { data: managerLogic } = useReadContract({
+    address: poolAddress as `0x${string}`,
+    abi: poolLogicAbi,
+    functionName: "poolManagerLogic",
+  });
+  const [feeDraft, setFeeDraft] = useState({
+    perf: "",
+    mgmt: "",
+    entry: "",
+    exit: "",
+  });
 
   const { data: composition, isLoading: compositionLoading, error: compositionError } = useQuery({
     queryKey: ["composition", poolAddress],
@@ -62,6 +79,7 @@ export default function PoolPage() {
           ← Back to Explore
         </Link>
       </div>
+      <Toast />
 
       {/* Performance Chart */}
       {history && history.length > 0 && (
@@ -102,12 +120,50 @@ export default function PoolPage() {
                 <span className="text-muted">Performance Fee</span>
                 <span className="font-semibold">{(metrics.performanceFee / 100).toFixed(2)}%</span>
               </div>
+              {metrics.managementFee !== undefined && (
+                <div className="flex justify-between">
+                  <span className="text-muted">Management Fee</span>
+                  <span className="font-semibold">{(metrics.managementFee / 100).toFixed(2)}%</span>
+                </div>
+              )}
+              {metrics.entryFee !== undefined && (
+                <div className="flex justify-between">
+                  <span className="text-muted">Entry Fee</span>
+                  <span className="font-semibold">{(metrics.entryFee / 100).toFixed(2)}%</span>
+                </div>
+              )}
+              {metrics.exitFee !== undefined && (
+                <div className="flex justify-between">
+                  <span className="text-muted">Exit Fee</span>
+                  <span className="font-semibold">{(metrics.exitFee / 100).toFixed(2)}%</span>
+                </div>
+              )}
               <div className="flex justify-between">
                 <span className="text-muted">Exit Cooldown</span>
                 <span className="font-semibold">
                   {Math.floor(metrics.exitCooldown / (24 * 60 * 60))} days
                 </span>
               </div>
+              <button
+                className="btn-ghost mt-2"
+                disabled={!managerLogic}
+                onClick={async () => {
+                  if (!managerLogic) return;
+                  try {
+                    push("Minting fees...", "info");
+                    await writeContractAsync({
+                      address: managerLogic as `0x${string}`,
+                      abi: poolManagerLogicAbi,
+                      functionName: "mintManagerFee",
+                    });
+                    push("Fees minted to manager", "success");
+                  } catch (e: any) {
+                    push(e?.message || "Mint failed", "error");
+                  }
+                }}
+              >
+                Mint Fees
+              </button>
             </div>
           )}
         </div>

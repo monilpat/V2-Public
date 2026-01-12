@@ -10,6 +10,9 @@ export type PoolMetrics = {
   trader: string;
   manager: string;
   performanceFee: number;
+  managementFee?: number;
+  entryFee?: number;
+  exitFee?: number;
   exitCooldown: number;
 };
 

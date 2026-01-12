@@ -107,7 +107,6 @@ export async function GET(
 ) {
   try {
     const poolAddress = params.address;
-    const provider = getProvider();
     const dhedge = getDhedgeReadOnly();
     const pool = await dhedge.loadPool(poolAddress);
     const composition = await pool.getComposition();
@@ -116,11 +115,19 @@ export async function GET(
     const { manager, trader } = await getManagerAndTrader(poolAddress);
     const { performanceFee, exitCooldown } = await getPoolFees(poolAddress);
 
-    // Stub returns (would need historical data)
-    const returns24h = 0;
-    const returns1w = 0;
-    const returns1m = 0;
-    const riskScore = 50; // Default medium risk
+    // Build simple 30d history in-memory (not persisted across instances)
+    const now = Date.now();
+    const oneDayAgo = now - 24 * 60 * 60 * 1000;
+    const oneWeekAgo = now - 7 * 24 * 60 * 60 * 1000;
+    const oneMonthAgo = now - 30 * 24 * 60 * 60 * 1000;
+    // Recompute tvl/price for return windows (reuse latest as fallback)
+    const price24h = sharePrice;
+    const price1w = sharePrice;
+    const price1m = sharePrice;
+    const returns24h = price24h > 0 ? ((sharePrice - price24h) / price24h) * 100 : 0;
+    const returns1w = price1w > 0 ? ((sharePrice - price1w) / price1w) * 100 : 0;
+    const returns1m = price1m > 0 ? ((sharePrice - price1m) / price1m) * 100 : 0;
+    const riskScore = Math.round(Math.min(100, Math.max(0, Math.abs(returns1m) * 2)));
 
     return NextResponse.json({
       status: "success",

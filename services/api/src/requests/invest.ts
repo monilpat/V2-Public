@@ -7,6 +7,7 @@ import { resolveNetwork } from "../utils/network";
 import { getFactory, getProvider } from "../utils/factory";
 import { fetchPriceUSD } from "../utils/prices";
 import erc20 from "../../abi/ERC20.json";
+import { isSupportedAsset } from "../utils/assets";
 
 const investRouter = Router();
 
@@ -14,6 +15,7 @@ investRouter.post("/approveDeposit", async (req: Request, res: Response) => {
   try {
     const network = resolveNetwork(req.query.network as string | undefined);
     const poolAddress = req.query.pool as string;
+    if (!isSupportedAsset(req.body.asset, true)) throw new Error("Unsupported deposit asset");
     const pool = await dhedge(network).loadPool(poolAddress);
     const tx = await pool.approveDeposit(
       req.body.asset,
@@ -29,6 +31,7 @@ investRouter.post("/deposit", async (req: Request, res: Response) => {
   try {
     const network = resolveNetwork(req.query.network as string | undefined);
     const poolAddress = req.query.pool as string;
+    if (!isSupportedAsset(req.body.asset, true)) throw new Error("Unsupported deposit asset");
     const pool = await dhedge(network).loadPool(poolAddress);
     const tx = await pool.deposit(req.body.asset, req.body.amount);
     res.status(200).send({ status: "success", msg: tx.hash });
