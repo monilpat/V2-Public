@@ -1,0 +1,82 @@
+import { NextRequest, NextResponse } from "next/server";
+import { ethers } from "ethers";
+import { Dhedge, Network } from "@dhedge/v2-sdk";
+import { formatUnits } from "ethers/lib/utils";
+
+const ERC20_ABI = [
+  "function totalSupply() view returns (uint256)",
+];
+
+const getProvider = () => {
+  const rpc = process.env.NEXT_PUBLIC_POLYGON_RPC;
+  if (!rpc) throw new Error("NEXT_PUBLIC_POLYGON_RPC not configured");
+  return new ethers.providers.JsonRpcProvider(rpc);
+};
+
+const computeTvl = async (composition: any[]): Promise<number> => {
+  let total = 0;
+  for (const item of composition) {
+    try {
+      const balance = BigInt(item.balance.hex || item.balance._hex || item.balance);
+      const decimals = item.decimals || 18;
+      const balanceFormatted = Number(formatUnits(balance, decimals));
+      const price = 1; // Stub
+      total += balanceFormatted * price;
+    } catch (e) {
+      continue;
+    }
+  }
+  return total;
+};
+
+const getSharePrice = async (poolAddress: string, composition: any[]): Promise<number> => {
+  try {
+    const provider = getProvider();
+    const contract = new ethers.Contract(poolAddress, ERC20_ABI, provider);
+    const totalSupply = await contract.totalSupply();
+    const tvl = await computeTvl(composition);
+    if (totalSupply.gt(0)) {
+      return tvl / Number(ethers.utils.formatEther(totalSupply));
+    }
+    return 1;
+  } catch {
+    return 1;
+  }
+};
+
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { address: string } }
+) {
+  try {
+    const poolAddress = params.address;
+    const provider = getProvider();
+    const dhedge = new Dhedge(provider, Network.POLYGON);
+    const pool = await dhedge.loadPool(poolAddress);
+    const composition = await pool.getComposition();
+    const tvl = await computeTvl(composition);
+    const sharePrice = await getSharePrice(poolAddress, composition);
+
+    // Generate stub history (last 30 days)
+    const now = Date.now();
+    const history = [];
+    for (let i = 29; i >= 0; i--) {
+      const timestamp = now - i * 24 * 60 * 60 * 1000;
+      history.push({
+        timestamp,
+        sharePrice: sharePrice * (0.95 + Math.random() * 0.1), // Stub variation
+        tvl: tvl * (0.95 + Math.random() * 0.1),
+      });
+    }
+
+    return NextResponse.json({
+      status: "success",
+      history,
+    });
+  } catch (err: any) {
+    return NextResponse.json(
+      { status: "fail", msg: err?.message || err },
+      { status: 400 }
+    );
+  }
+}

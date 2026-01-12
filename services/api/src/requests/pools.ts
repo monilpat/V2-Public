@@ -1,5 +1,5 @@
 import { Router, Request, Response } from "express";
-import { getFactory, provider } from "../utils/factory";
+import { getFactory, getProvider } from "../utils/factory";
 import erc20 from "../../abi/ERC20.json";
 import { dhedge } from "../dhedge";
 import { resolveNetwork } from "../utils/network";
@@ -49,8 +49,9 @@ const getSharePrice = async (poolAddress: string, composition: any[]): Promise<n
 poolsRouter.get("/pools", async (req: Request, res: Response) => {
   try {
     const network = resolveNetwork(req.query.network as string | undefined);
+    const provider = getProvider(network);
     const search = req.query.search as string | undefined;
-    const factory = getFactory();
+    const factory = getFactory(network);
     const pools: string[] = await factory.getDeployedFunds();
     
     const results = await Promise.all(
@@ -73,6 +74,7 @@ poolsRouter.get("/pools", async (req: Request, res: Response) => {
             returns1w: 0, // Stub
             returns1m: 0, // Stub
             riskScore: Math.floor(Math.random() * 100), // Stub: random 0-100
+            network,
           };
         } catch (_) {
           return {
@@ -84,6 +86,7 @@ poolsRouter.get("/pools", async (req: Request, res: Response) => {
             returns1w: 0,
             returns1m: 0,
             riskScore: 50,
+            network,
           };
         }
       })
@@ -226,14 +229,8 @@ poolsRouter.get("/pool/:address/trades", async (req: Request, res: Response) => 
   try {
     const poolAddress = req.params.address;
     const network = resolveNetwork(req.query.network as string | undefined);
-    
-    // Query trade events from the pool contract
-    // Trade events are typically emitted by routers/swappers
-    // For now, we'll query common trade events from PoolLogic
+    const provider = getProvider(network);
     const poolContract = new ethers.Contract(poolAddress, erc20, provider);
-    
-    // Get recent Transfer events as a proxy for activity (not perfect but shows movement)
-    // In production, would query actual trade events from swappers/routers or subgraph
     const currentBlock = provider ? await provider.getBlockNumber() : 0;
     const fromBlock = Math.max(0, currentBlock - 10000); // Last ~10k blocks
     

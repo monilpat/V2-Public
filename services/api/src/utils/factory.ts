@@ -1,14 +1,16 @@
 import { ethers } from "ethers";
 import PoolFactoryAbi from "../../abi/PoolFactory.json";
 import { polygonConfig } from "../config/polygon";
+import { resolveRpcUrl, resolveNetwork } from "./network";
+import { Network } from "@dhedge/v2-sdk";
 
-const rpcUrl = process.env.INFURA_PROJECT_ID
-  ? `https://polygon-mainnet.infura.io/v3/${process.env.INFURA_PROJECT_ID}`
-  : process.env.POLYGON_RPC_URL;
+export const getProvider = (network: Network) => {
+  const rpc = resolveRpcUrl(network);
+  if (!rpc) throw new Error("RPC not configured");
+  return new ethers.providers.JsonRpcProvider(rpc);
+};
 
-export const provider = rpcUrl ? new ethers.providers.JsonRpcProvider(rpcUrl) : undefined;
-
-export const getFactory = () => {
-  if (!provider) throw new Error("RPC not configured");
+export const getFactory = (network: Network) => {
+  const provider = getProvider(network);
   return new ethers.Contract(polygonConfig.factoryAddress, PoolFactoryAbi, provider);
 };

@@ -6,6 +6,7 @@ export type PoolMeta = {
   address: string;
   name: string;
   symbol: string;
+  network?: number;
   tvl?: number;
   returns24h?: number;
   returns1w?: number;
@@ -13,10 +14,10 @@ export type PoolMeta = {
   riskScore?: number;
 };
 
-export const fetchPools = async (): Promise<PoolMeta[]> => {
+export const fetchPools = async (network?: string): Promise<PoolMeta[]> => {
   try {
     const baseUrl = API_BASE.endsWith('/') ? API_BASE.slice(0, -1) : API_BASE;
-    const res = await axios.get(`${baseUrl}/pools`);
+    const res = await axios.get(`${baseUrl}/pools`, { params: { network } });
     if (res.data?.pools?.length) return res.data.pools;
   } catch (e) {
     // fallback below

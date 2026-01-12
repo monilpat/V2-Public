@@ -7,8 +7,8 @@ import { useMemo, useState } from "react";
 import { approveDeposit, deposit, trade as tradeApi, approveTrade, createPool } from "@/lib/api";
 import { assetMeta, fetchPriceUSD } from "@/lib/prices";
 import { useWriteContract, useReadContract, useAccount, useConnect, useDisconnect } from "wagmi";
-import { poolLogicAbi } from "@/lib/abi";
-import { formatUnits, parseUnits } from "viem";
+import { poolLogicAbi, poolManagerLogicAbi, erc20Abi } from "@/lib/abi";
+import { formatUnits, parseUnits, maxUint256 } from "viem";
 import Link from "next/link";
 import { Nav } from "@/components/nav";
 import { fetchPools } from "@/lib/pools";
@@ -49,6 +49,7 @@ function PoolCard({ pool }: { pool: { name: string; address: string; symbol: str
   const [tradeFrom, setTradeFrom] = useState("");
   const [tradeTo, setTradeTo] = useState("");
   const [share, setShare] = useState("");
+  const [withdrawAmount, setWithdrawAmount] = useState("");
   const [trader, setTrader] = useState("");
   const [status, setStatus] = useState<string | null>(null);
   const { address } = useAccount();
@@ -65,6 +66,12 @@ function PoolCard({ pool }: { pool: { name: string; address: string; symbol: str
     abi: poolLogicAbi,
     functionName: "decimals",
     query: { enabled: !!address },
+  });
+  const { data: poolManagerLogicAddress } = useReadContract({
+    address: pool.address as `0x${string}`,
+    abi: poolLogicAbi,
+    functionName: "poolManagerLogic",
+    query: { enabled: pool.address !== "0x0000000000000000000000000000000000000000" },
   });
 
   return (
@@ -117,11 +124,17 @@ function PoolCard({ pool }: { pool: { name: string; address: string; symbol: str
               />
               <button
                 className="btn-ghost"
+                disabled={!poolManagerLogicAddress || !trader}
                 onClick={async () => {
                   try {
-                    setStatus("Setting trader...");
-                    const tx = await axios.post(`${API_BASE}/setTrader?pool=${pool.address}`, { traderAccount: trader });
-                    const m = `Tx: ${tx.data.msg || "sent"}`; push(m, "success"); setStatus(m);
+                    clear(); setStatus("Setting trader...");
+                    const hash = await writeContractAsync({
+                      address: poolManagerLogicAddress as `0x${string}`,
+                      abi: poolManagerLogicAbi,
+                      functionName: "setTrader",
+                      args: [trader as `0x${string}`],
+                    });
+                    const m = `Tx: ${hash}`; push(m, "success"); setStatus(m);
                   } catch (err: any) {
                     const m = err?.message || "Error"; setStatus(m); push(m, "error");
                   }
@@ -210,12 +223,20 @@ function PoolCard({ pool }: { pool: { name: string; address: string; symbol: str
             {status && <div className="text-xs text-muted">{status}</div>}
             <div className="text-sm font-semibold pt-2">Withdraw</div>
             <div className="flex gap-2 items-center flex-wrap">
+              <input
+                className="w-36 bg-white/5 rounded-lg px-3 py-2 text-sm"
+                placeholder="Shares to withdraw"
+                value={withdrawAmount}
+                onChange={(e) => setWithdrawAmount(e.target.value)}
+              />
               <button
                 className="btn-ghost"
                 disabled={!address || !shareBalance}
                 onClick={async () => {
                   if (!shareBalance || !shareDecimals) return;
-                  const amount = shareBalance; // full balance
+                  const amount = withdrawAmount
+                    ? parseUnits(withdrawAmount, shareDecimals as number)
+                    : (shareBalance as bigint);
                   try {
                     clear(); setStatus("Withdrawing...");
                     await writeContractAsync({
@@ -230,13 +251,14 @@ function PoolCard({ pool }: { pool: { name: string; address: string; symbol: str
                   }
                 }}
               >
-                Withdraw all
+                Withdraw
               </button>
               {shareBalance && shareDecimals !== undefined ? (
                 <span className="text-xs text-muted">
                   Balance: {formatUnits(shareBalance as bigint, shareDecimals as number)}
                 </span>
               ) : null}
+              <div className="text-xs text-muted">Cooldown may apply per pool settings.</div>
             </div>
           </div>
         </>
