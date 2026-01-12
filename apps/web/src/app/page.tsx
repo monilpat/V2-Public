@@ -4,7 +4,7 @@ import axios from "axios";
 import { API_BASE } from "@/lib/config";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { approveDeposit, deposit, trade as tradeApi, approveTrade, createPool } from "@/lib/api";
+import { trade as tradeApi, approveTrade, createPool } from "@/lib/api";
 import { assetMeta, fetchPriceUSD } from "@/lib/prices";
 import { useWriteContract, useReadContract, useAccount, useConnect, useDisconnect } from "wagmi";
 import { poolLogicAbi, poolManagerLogicAbi, erc20Abi } from "@/lib/abi";
@@ -160,15 +160,29 @@ function PoolCard({ pool }: { pool: { name: string; address: string; symbol: str
               />
               <button
                 className="btn-primary"
+                disabled={!address || !depositAsset || !depositAmount}
                 onClick={async () => {
                   try {
                     if (!depositAsset || !depositAmount) { setStatus("Enter asset and amount"); return; }
                     clear(); setStatus("Approving...");
-                    await approveDeposit(pool.address, depositAsset);
+                    // Approve asset for deposit
+                    await writeContractAsync({
+                      address: depositAsset as `0x${string}`,
+                      abi: erc20Abi,
+                      functionName: "approve",
+                      args: [pool.address as `0x${string}`, maxUint256],
+                    });
                     push("Approved deposit", "success");
                     setStatus("Depositing...");
-                    const tx = await deposit(pool.address, depositAsset, depositAmount);
-                    const m = `Tx: ${tx.data.msg || "sent"}`; push(m, "success"); setStatus(m);
+                    // Deposit into pool
+                    const amount = parseUnits(depositAmount, 18); // Assuming 18 decimals, can be enhanced
+                    const hash = await writeContractAsync({
+                      address: pool.address as `0x${string}`,
+                      abi: poolLogicAbi,
+                      functionName: "deposit",
+                      args: [depositAsset as `0x${string}`, amount],
+                    });
+                    const m = `Tx: ${hash}`; push(m, "success"); setStatus(m);
                   } catch (err: any) {
                     const m = err?.message || "Error"; setStatus(m); push(m, "error");
                   }
@@ -199,9 +213,12 @@ function PoolCard({ pool }: { pool: { name: string; address: string; symbol: str
               />
               <button
                 className="btn-ghost"
+                disabled={!tradeFrom || !tradeTo || !share}
                 onClick={async () => {
                   try {
                     clear(); setStatus("Approving trade...");
+                    // Note: Trade approval and execution is complex and may require dHEDGE SDK
+                    // For now, keeping API call but it will need backend service or SDK integration
                     await approveTrade(pool.address, "oneinch", tradeFrom);
                     push("Approved trade", "success");
                     setStatus("Trading...");
@@ -211,7 +228,7 @@ function PoolCard({ pool }: { pool: { name: string; address: string; symbol: str
                       share: Number(share),
                       slippage: 0.5,
                     });
-                    const m = `Tx: `; push(m, "success"); setStatus(m);
+                    const m = `Tx: ${tx.data?.msg || "sent"}`; push(m, "success"); setStatus(m);
                   } catch (err: any) {
                     const m = err?.message || "Error"; setStatus(m); push(m, "error");
                   }

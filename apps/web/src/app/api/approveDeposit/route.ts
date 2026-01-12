@@ -10,12 +10,13 @@ const getProvider = () => {
 
 export async function POST(request: NextRequest) {
   try {
-    // Note: This endpoint requires a private key to execute transactions
-    // Transactions should be signed client-side using wagmi
+    // Note: approveDeposit should be called client-side using wagmi
+    // This endpoint is kept for backward compatibility
+    // Frontend now uses wagmi's writeContractAsync directly with erc20Abi
     return NextResponse.json(
       { 
         status: "fail", 
-        msg: "approveDeposit requires server-side private key. Use client-side transaction signing instead." 
+        msg: "approveDeposit should be executed client-side using wagmi. See frontend implementation." 
       },
       { status: 400 }
     );

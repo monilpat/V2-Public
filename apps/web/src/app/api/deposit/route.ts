@@ -10,12 +10,13 @@ const getProvider = () => {
 
 export async function POST(request: NextRequest) {
   try {
-    // Note: This endpoint requires a private key to execute transactions
-    // Transactions should be signed client-side using wagmi
+    // Note: deposit should be called client-side using wagmi
+    // This endpoint is kept for backward compatibility
+    // Frontend now uses wagmi's writeContractAsync directly with poolLogicAbi
     return NextResponse.json(
       { 
         status: "fail", 
-        msg: "deposit requires server-side private key. Use client-side transaction signing instead." 
+        msg: "deposit should be executed client-side using wagmi. See frontend implementation." 
       },
       { status: 400 }
     );
