@@ -88,3 +88,79 @@ export const fetchProtocolStats = async (network?: string): Promise<ProtocolStat
   });
   return res.data.stats;
 };
+
+// === New fetch functions for pool detail tabs ===
+
+export type Depositor = {
+  address: string;
+  balance: string;
+  balanceFormatted: number;
+  valueUsd: number;
+  label?: string;
+};
+
+export type DepositEvent = {
+  txHash: string;
+  blockNumber: number;
+  timestamp: number;
+  investor: string;
+  assetDeposited: string;
+  amountDeposited: string;
+  valueDeposited: number;
+  fundTokensReceived: string;
+};
+
+export type WithdrawalEvent = {
+  txHash: string;
+  blockNumber: number;
+  timestamp: number;
+  investor: string;
+  valueWithdrawn: number;
+  fundTokensWithdrawn: string;
+};
+
+export type ActivityType = "Deposit" | "Withdrawal" | "Trade";
+
+export type ActivityEvent = {
+  type: ActivityType;
+  txHash: string;
+  blockNumber: number;
+  timestamp: number;
+  actor: string;
+  outgoing?: {
+    asset: string;
+    amount: string;
+    valueUsd?: number;
+  };
+  incoming?: {
+    asset: string;
+    amount: string;
+    valueUsd?: number;
+  };
+};
+
+export const fetchPoolDepositors = async (poolAddress: string): Promise<{ totalDepositors: number; depositors: Depositor[] }> => {
+  const res = await axios.get(`${API_BASE}/pool/${poolAddress}/depositors`);
+  return { totalDepositors: res.data.totalDepositors, depositors: res.data.depositors };
+};
+
+export const fetchPoolDeposits = async (poolAddress: string, minValue?: number): Promise<{ totalDeposits: number; deposits: DepositEvent[] }> => {
+  const res = await axios.get(`${API_BASE}/pool/${poolAddress}/deposits`, {
+    params: minValue ? { minValue } : {},
+  });
+  return { totalDeposits: res.data.totalDeposits, deposits: res.data.deposits };
+};
+
+export const fetchPoolWithdrawals = async (poolAddress: string, minValue?: number): Promise<{ totalWithdrawals: number; withdrawals: WithdrawalEvent[] }> => {
+  const res = await axios.get(`${API_BASE}/pool/${poolAddress}/withdrawals`, {
+    params: minValue ? { minValue } : {},
+  });
+  return { totalWithdrawals: res.data.totalWithdrawals, withdrawals: res.data.withdrawals };
+};
+
+export const fetchPoolActivity = async (poolAddress: string, type?: ActivityType): Promise<{ totalRecords: number; activities: ActivityEvent[] }> => {
+  const res = await axios.get(`${API_BASE}/pool/${poolAddress}/activity`, {
+    params: type ? { type } : {},
+  });
+  return { totalRecords: res.data.totalRecords, activities: res.data.activities };
+};

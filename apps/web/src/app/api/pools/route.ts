@@ -77,30 +77,26 @@ export async function GET(request: NextRequest) {
           const composition = await pool.getComposition();
           const tvl = await computeTvl(composition);
           
-          // Fetch metrics for returns and risk score
-          let returns24h = 0;
-          let returns1w = 0;
-          let returns1m = 0;
-          let riskScore = 50;
-          let score = 0;
+          // Get total supply for share price calculation
+          const totalSupply = await contract.totalSupply().catch(() => ethers.BigNumber.from(0));
+          const sharePrice = tvl > 0 && totalSupply.gt(0) 
+            ? tvl / Number(ethers.utils.formatEther(totalSupply)) 
+            : 1;
           
-          try {
-            const metricsRes = await axios.get(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/api/pool/${addr}/metrics`).catch(() => null);
-            if (metricsRes?.data?.status === "success" && metricsRes.data.metrics) {
-              returns24h = metricsRes.data.metrics.returns24h || 0;
-              returns1w = metricsRes.data.metrics.returns1w || 0;
-              returns1m = metricsRes.data.metrics.returns1m || 0;
-              riskScore = metricsRes.data.metrics.riskScore || 50;
-              // Calculate score: combination of TVL, returns, and risk
-              score = Math.round(
-                (tvl / 1000) * 0.3 + // TVL component (normalized)
-                (returns1m || 0) * 10 * 0.5 + // Returns component
-                (100 - riskScore) * 0.2 // Risk component (lower risk = higher score)
-              );
-            }
-          } catch (e) {
-            // Use defaults if metrics fetch fails
-          }
+          // Calculate returns and risk score (simplified - would use historical data in production)
+          const returns24h = 0; // Would need historical data
+          const returns1w = 0; // Would need historical data  
+          const returns1m = 0; // Would need historical data
+          const riskScore = Math.round(Math.min(100, Math.max(0, 50))); // Default medium risk
+          
+          // Calculate score: combination of TVL, returns, and risk
+          const score = Math.round(
+            Math.min(1000, Math.max(0,
+              (tvl / 1000) * 0.3 + // TVL component (normalized)
+              (returns1m || 0) * 10 * 0.5 + // Returns component
+              (100 - riskScore) * 0.2 // Risk component (lower risk = higher score)
+            ))
+          );
 
           return {
             address: addr,

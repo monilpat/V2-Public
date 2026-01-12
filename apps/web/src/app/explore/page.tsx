@@ -291,7 +291,7 @@ export default function ExplorePage() {
                           )}
                         </td>
                         <td className="px-4 py-3 text-right">
-                          <RiskScoreBadge score={riskLevel * 20} />
+                          <RiskScoreBadge score={pool.riskScore || 50} />
                         </td>
                         <td className="px-4 py-3 text-right">
                           {pool.score !== undefined ? (
