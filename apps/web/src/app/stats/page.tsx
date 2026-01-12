@@ -21,7 +21,7 @@ export default function StatsPage() {
       <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
         <header className="flex flex-col gap-2">
           <div className="text-sm text-muted">Protocol Statistics</div>
-          <h1 className="text-3xl font-bold">dHEDGE Protocol Overview</h1>
+          <h1 className="text-3xl font-bold">Protocol Overview</h1>
           <p className="text-muted mt-1">Total value locked, vaults, managers, and fees across all networks.</p>
           <NetworkSelector value={network} onChange={setNetwork} disabledIds={[1,10,42161]} />
         </header>

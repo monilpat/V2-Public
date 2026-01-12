@@ -13,10 +13,7 @@ export const polygonConfig = {
   features: ["Spot Trading", "Lending & Borrowing", "Leverage", "Liquidity Provision"],
   dapps: ["1inch", "Aave", "KyberSwap", "Odos", "Toros", "Uniswap"],
   blockExplorer: "https://polygonscan.com",
-  pools: [
-    // seed with known pools; replace with live factory query or env list
-    { name: "Sample Pool", address: "0x0000000000000000000000000000000000000000", symbol: "POOL" },
-  ],
+  pools: [],
   assets: [
     { symbol: "USDC", address: "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174", decimals: 6, isDeposit: true, category: "Stablecoins" },
     { symbol: "USDT", address: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F", decimals: 6, isDeposit: true, category: "Stablecoins" },

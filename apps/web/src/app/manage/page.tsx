@@ -84,7 +84,6 @@ export default function ManagePage() {
             <div>
               <div className="flex items-center gap-2 mb-4">
                 <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-accent to-accent2" />
-                <span className="font-bold">dHEDGE</span>
               </div>
               <p className="text-sm text-muted">
                 Decentralized asset management

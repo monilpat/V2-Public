@@ -7,11 +7,15 @@ export function useToast() {
   const clear = () => setToast(null);
   const Toast = toast ? (
     <div
-      className={`fixed bottom-6 right-6 px-4 py-3 rounded-xl shadow-lg border ${
-        toast.tone === "error" ? "border-red-500/40 bg-red-500/10" : toast.tone === "success" ? "border-emerald-400/40 bg-emerald-400/10" : "border-white/20 bg-white/10"
+      className={`fixed bottom-6 right-6 z-50 px-4 py-3 rounded-xl shadow-lg border animate-slide-up ${
+        toast.tone === "error" 
+          ? "border-red-500/40 bg-red-500/10 text-red-400" 
+          : toast.tone === "success" 
+            ? "border-accent/40 bg-accent/10 text-accent" 
+            : "border-border bg-card text-foreground"
       }`}
     >
-      <div className="text-sm">{toast.message}</div>
+      <div className="text-sm font-medium">{toast.message}</div>
     </div>
   ) : null;
   return { Toast, push, clear };

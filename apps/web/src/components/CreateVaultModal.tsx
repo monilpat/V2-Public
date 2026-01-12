@@ -8,6 +8,7 @@ import { VaultAssetsStep, type Asset } from "./VaultAssetsStep";
 import { VaultPreviewStep } from "./VaultPreviewStep";
 import { type NetworkConfig, networks } from "@/config/networks";
 import { poolFactoryAbi } from "@/lib/abi";
+import { useToast } from "./toast";
 
 interface CreateVaultModalProps {
   isOpen: boolean;
@@ -28,6 +29,7 @@ export function CreateVaultModal({
 }: CreateVaultModalProps) {
   const { address } = useAccount();
   const { writeContractAsync, isPending } = useWriteContract();
+  const { Toast, push, clear } = useToast();
   
   const [currentStep, setCurrentStep] = useState(1);
   const [status, setStatus] = useState<string | null>(null);
@@ -162,6 +164,8 @@ export function CreateVaultModal({
         gas: 7_000_000n,
       });
 
+      clear();
+      push(`Vault "${vaultInfo.vaultName}" created successfully!`, "success");
       setStatus(`Vault created! Tx: ${txHash}`);
       
       // Close modal after success
@@ -182,7 +186,9 @@ export function CreateVaultModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <>
+      {Toast}
+      <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
@@ -286,6 +292,7 @@ export function CreateVaultModal({
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 }

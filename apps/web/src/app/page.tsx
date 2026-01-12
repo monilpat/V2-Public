@@ -167,7 +167,7 @@ export default function Page() {
         <div className="max-w-7xl mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              Why dHEDGE?
+              Why Choose Us?
             </h2>
             <p className="text-muted max-w-2xl mx-auto">
               The most advanced decentralized asset management protocol across multiple chains
@@ -257,7 +257,7 @@ export default function Page() {
               </h2>
               <p className="text-muted mb-8 max-w-xl mx-auto">
                 Whether you&apos;re an investor looking for alpha or a manager ready to build your reputation, 
-                dHEDGE has you covered.
+                we have you covered.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link
@@ -285,7 +285,6 @@ export default function Page() {
             <div>
               <div className="flex items-center gap-2 mb-4">
                 <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-accent to-accent2" />
-                <span className="font-bold">dHEDGE</span>
               </div>
               <p className="text-sm text-muted">
                 Decentralized asset management for everyone.
@@ -317,7 +316,7 @@ export default function Page() {
             </div>
           </div>
           <div className="border-t border-border pt-8 text-center text-sm text-muted">
-            <p>© {new Date().getFullYear()} dHEDGE. All rights reserved.</p>
+            <p>© {new Date().getFullYear()} All rights reserved.</p>
           </div>
         </div>
       </footer>

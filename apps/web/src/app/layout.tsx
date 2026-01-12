@@ -4,7 +4,7 @@ import { Providers } from "./providers";
 import { ThemeProvider } from "@/components/theme-provider";
 
 export const metadata = {
-  title: "dHEDGE | Decentralized Asset Management",
+  title: "Vaults",
   description: "Create and manage decentralized investment vaults across multiple networks",
 };
 

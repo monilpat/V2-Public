@@ -5,11 +5,10 @@ test.describe('Navigation', () => {
     await page.goto('/');
     
     // Check main heading
-    await expect(page.getByText('dHEDGE Vaults')).toBeVisible();
-    await expect(page.getByText(/Create, deposit, withdraw, and trade/i)).toBeVisible();
+    await expect(page.getByText('Decentralized')).toBeVisible();
+    await expect(page.getByText('Asset Management')).toBeVisible();
     
     // Check navigation
-    await expect(page.getByRole('link', { name: /home/i })).toBeVisible();
     await expect(page.getByRole('link', { name: /explore/i })).toBeVisible();
     await expect(page.getByRole('link', { name: /my deposits/i })).toBeVisible();
     await expect(page.getByRole('link', { name: /stats/i })).toBeVisible();

@@ -14,17 +14,16 @@ test.describe('Smoke Tests', () => {
     await page.waitForTimeout(2000);
     
     // Check for main heading (case-insensitive, partial match)
-    // Also check for alternative text that might be present
-    const heading = page.getByRole('heading', { name: /dHEDGE.*Vaults/i });
+    const heading = page.getByRole('heading', { name: /Decentralized/i });
     const headingText = page.locator('h1');
     
     // Try both approaches
     try {
       await expect(heading).toBeVisible({ timeout: 5000 });
     } catch {
-      // Fallback: check if any h1 contains "Vault" or "dHEDGE"
+      // Fallback: check if any h1 contains "Asset Management" or "Decentralized"
       const h1Text = await headingText.first().textContent();
-      expect(h1Text?.toLowerCase()).toMatch(/vault|dhedge/);
+      expect(h1Text?.toLowerCase()).toMatch(/decentralized|asset management/);
     }
   });
 
