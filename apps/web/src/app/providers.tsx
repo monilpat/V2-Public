@@ -12,7 +12,7 @@ export function Providers({ children }: PropsWithChildren) {
   return (
     <WagmiProvider config={wagmiConfig}>
       <QueryClientProvider client={queryClient}>
-        <AppKitProvider adapter={appKit} projectId={process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || "demo"} themeMode="dark" networks={[polygon]}>
+        <AppKitProvider adapters={[appKit]} projectId={process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || "demo"} themeMode="dark" networks={[polygon]}>
           {children}
         </AppKitProvider>
       </QueryClientProvider>

@@ -44,7 +44,7 @@ export default function MyDepositsPage() {
       ) : !deposits || deposits.length === 0 ? (
         <div className="card p-8 text-center">
           <div className="text-lg font-semibold mb-2">No Deposits Yet</div>
-          <div className="text-muted mb-4">You haven't deposited into any vaults.</div>
+          <div className="text-muted mb-4">You haven&apos;t deposited into any vaults.</div>
           <Link href="/explore" className="btn-primary inline-block">
             Explore Vaults
           </Link>

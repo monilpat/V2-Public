@@ -49,6 +49,7 @@ function PoolCard({ pool }: { pool: { name: string; address: string; symbol: str
   const [tradeFrom, setTradeFrom] = useState("");
   const [tradeTo, setTradeTo] = useState("");
   const [share, setShare] = useState("");
+  const [trader, setTrader] = useState("");
   const [status, setStatus] = useState<string | null>(null);
   const { address } = useAccount();
   const { writeContractAsync } = useWriteContract();
@@ -392,4 +393,3 @@ export default function Page() {
     </div>
   );
 }
-  const [trader, setTrader] = useState("");
