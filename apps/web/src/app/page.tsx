@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { approveDeposit, deposit, trade as tradeApi, approveTrade, createPool } from "@/lib/api";
 import { assetMeta, fetchPriceUSD } from "@/lib/prices";
-import { useWriteContract, useReadContract, useAccount } from "wagmi";
+import { useWriteContract, useReadContract, useAccount, useConnect, useDisconnect } from "wagmi";
 import { poolLogicAbi } from "@/lib/abi";
 import { formatUnits, parseUnits } from "viem";
 import Link from "next/link";
@@ -231,11 +231,11 @@ function PoolCard({ pool }: { pool: { name: string; address: string; symbol: str
               >
                 Withdraw all
               </button>
-              {shareBalance && shareDecimals !== undefined && (
+              {shareBalance && shareDecimals !== undefined ? (
                 <span className="text-xs text-muted">
                   Balance: {formatUnits(shareBalance as bigint, shareDecimals as number)}
                 </span>
-              )}
+              ) : null}
             </div>
           </div>
         </>
