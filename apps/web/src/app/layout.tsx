@@ -1,21 +1,24 @@
 import "../styles/globals.css";
 import { ReactNode } from "react";
 import { Providers } from "./providers";
+import { ThemeProvider } from "@/components/theme-provider";
 
 export const metadata = {
-  title: "dHEDGE | Polygon",
-  description: "Manage dHEDGE vaults on Polygon",
+  title: "dHEDGE | Decentralized Asset Management",
+  description: "Create and manage decentralized investment vaults across multiple networks",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className="min-h-screen bg-canvas text-white font-body" suppressHydrationWarning>
-        <Providers>
-          <div className="mx-auto max-w-6xl px-6 py-8 space-y-8">
-            {children}
-          </div>
-        </Providers>
+      <body className="min-h-screen font-body" suppressHydrationWarning>
+        <ThemeProvider>
+          <Providers>
+            <div className="min-h-screen bg-background text-foreground transition-colors">
+              {children}
+            </div>
+          </Providers>
+        </ThemeProvider>
       </body>
     </html>
   );

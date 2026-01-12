@@ -63,10 +63,10 @@ export function FeeSlider({
     <div className="space-y-3">
       {label && (
         <div className="flex items-center gap-2">
-          <span className="text-sm font-medium text-gray-700">{label}</span>
+          <span className="text-sm font-medium">{label}</span>
           <button
             type="button"
-            className="w-5 h-5 rounded-full border border-gray-300 text-gray-400 text-xs flex items-center justify-center hover:bg-gray-50 transition-colors"
+            className="w-5 h-5 rounded-full border border-muted text-muted text-xs flex items-center justify-center hover:bg-muted/10 transition-colors"
             title="Performance fee is charged on profits"
           >
             ?
@@ -85,9 +85,9 @@ export function FeeSlider({
             min={min}
             max={max}
             step={step}
-            className="w-20 h-10 px-3 pr-8 text-center border border-gray-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent text-gray-900 font-medium"
+            className="w-20 h-10 px-3 pr-8 text-center border border-border rounded-lg bg-background-secondary focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent font-medium"
           />
-          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">
+          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted text-sm">
             {suffix}
           </span>
         </div>
@@ -95,10 +95,10 @@ export function FeeSlider({
         {/* Slider container */}
         <div className="flex-1 relative">
           {/* Track background */}
-          <div className="relative h-2 bg-gray-100 rounded-full">
+          <div className="relative h-2 bg-muted/20 rounded-full">
             {/* Filled track */}
             <div
-              className="absolute h-full bg-gradient-to-r from-cyan-400 to-cyan-500 rounded-full transition-all duration-150"
+              className="absolute h-full bg-gradient-to-r from-accent to-accent2 rounded-full transition-all duration-150"
               style={{ width: `${percentage}%` }}
             />
             
@@ -110,11 +110,10 @@ export function FeeSlider({
                 return (
                   <div
                     key={marker}
-                    className="absolute w-2 h-2 rounded-full transform -translate-x-1/2 transition-colors duration-150"
-                    style={{ 
-                      left: `${markerPercent}%`,
-                      backgroundColor: isActive ? '#22d3d3' : '#e5e7eb'
-                    }}
+                    className={`absolute w-2 h-2 rounded-full transform -translate-x-1/2 transition-colors duration-150 ${
+                      isActive ? "bg-accent" : "bg-muted/30"
+                    }`}
+                    style={{ left: `${markerPercent}%` }}
                   />
                 );
               })}
@@ -134,12 +133,12 @@ export function FeeSlider({
 
           {/* Thumb */}
           <div
-            className="absolute top-1/2 -translate-y-1/2 w-5 h-5 bg-white border-2 border-cyan-400 rounded-full shadow-md transform -translate-x-1/2 pointer-events-none transition-all duration-150"
+            className="absolute top-1/2 -translate-y-1/2 w-5 h-5 bg-background border-2 border-accent rounded-full shadow-md transform -translate-x-1/2 pointer-events-none transition-all duration-150"
             style={{ left: `${percentage}%` }}
           />
 
           {/* Marker labels */}
-          <div className="relative mt-3 flex justify-between text-xs text-gray-400">
+          <div className="relative mt-3 flex justify-between text-xs text-muted">
             {markers.map((marker) => {
               const markerPercent = ((marker - min) / (max - min)) * 100;
               return (

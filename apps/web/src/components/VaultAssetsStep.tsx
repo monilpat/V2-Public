@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { AssetToggle } from "./AssetToggle";
-import { assetCategories, type AssetCategory } from "@/config/networks";
+import { assetCategories } from "@/config/networks";
 
 export interface Asset {
   symbol: string;
@@ -77,14 +77,14 @@ export function VaultAssetsStep({
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-gray-900">Vault Assets</h2>
-        <p className="text-sm text-gray-400 mt-1">V2 vault</p>
+        <h2 className="text-2xl font-bold">Vault Assets</h2>
+        <p className="text-sm text-muted mt-1">V2 vault</p>
       </div>
 
       {/* Search */}
       <div className="relative">
         <svg
-          className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400"
+          className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -101,7 +101,7 @@ export function VaultAssetsStep({
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Search Asset"
-          className="w-full h-12 pl-12 pr-4 border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent text-gray-900 placeholder:text-gray-400"
+          className="w-full h-12 pl-12 pr-4 border border-border rounded-xl bg-background-secondary focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent placeholder:text-muted"
         />
       </div>
 
@@ -117,8 +117,8 @@ export function VaultAssetsStep({
               flex items-center justify-between
               transition-all duration-200
               ${selectedCategories.has(category)
-                ? "border-cyan-400 bg-cyan-50 text-cyan-600"
-                : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
+                ? "border-accent bg-accent/10 text-accent"
+                : "border-border bg-background-secondary text-muted hover:border-muted"
               }
             `}
           >
@@ -143,14 +143,14 @@ export function VaultAssetsStep({
       {/* Asset list */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-muted">
             Available assets ({filteredAssets.length})
           </p>
-          <p className="text-xs text-gray-400">
+          <p className="text-xs text-muted">
             {selectedAssets.length}/12 selected
           </p>
         </div>
-        <div className="max-h-48 overflow-y-auto border border-gray-200 rounded-xl p-3 space-y-2">
+        <div className="max-h-48 overflow-y-auto border border-border rounded-xl p-3 space-y-2">
           {filteredAssets.map((asset) => (
             <button
               key={asset.address}
@@ -160,31 +160,31 @@ export function VaultAssetsStep({
                 w-full flex items-center justify-between p-3 rounded-lg
                 transition-all duration-200
                 ${selectedAssets.includes(asset.address)
-                  ? "bg-cyan-50 border border-cyan-200"
-                  : "bg-gray-50 hover:bg-gray-100 border border-transparent"
+                  ? "bg-accent/10 border border-accent/30"
+                  : "bg-background-secondary hover:bg-muted/10 border border-transparent"
                 }
               `}
             >
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center text-xs text-white font-bold">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-accent to-accent2 flex items-center justify-center text-xs text-black font-bold">
                   {asset.symbol.slice(0, 2)}
                 </div>
                 <div className="text-left">
-                  <p className="font-medium text-gray-900">{asset.symbol}</p>
-                  <p className="text-xs text-gray-400">{asset.category}</p>
+                  <p className="font-medium">{asset.symbol}</p>
+                  <p className="text-xs text-muted">{asset.category}</p>
                 </div>
               </div>
               <div
                 className={`
                   w-5 h-5 rounded-full border-2 flex items-center justify-center
                   ${selectedAssets.includes(asset.address)
-                    ? "bg-cyan-400 border-cyan-400"
-                    : "border-gray-300"
+                    ? "bg-accent border-accent"
+                    : "border-muted"
                   }
                 `}
               >
                 {selectedAssets.includes(asset.address) && (
-                  <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <svg className="w-3 h-3 text-black" fill="currentColor" viewBox="0 0 20 20">
                     <path
                       fillRule="evenodd"
                       d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
@@ -201,12 +201,12 @@ export function VaultAssetsStep({
       {/* Selected assets */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-gray-700">Enabled Assets</h3>
-          <span className="text-xs text-gray-400">Can be changed any time</span>
+          <h3 className="text-sm font-semibold">Enabled Assets</h3>
+          <span className="text-xs text-muted">Can be changed any time</span>
         </div>
         <div className="flex flex-wrap gap-2">
           {selectedAssetData.length === 0 ? (
-            <p className="text-sm text-gray-400">No assets selected</p>
+            <p className="text-sm text-muted">No assets selected</p>
           ) : (
             selectedAssetData.map((asset) => (
               <AssetToggle

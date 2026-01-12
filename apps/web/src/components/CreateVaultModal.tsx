@@ -188,11 +188,11 @@ export function CreateVaultModal({
       />
 
       {/* Modal */}
-      <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-white rounded-2xl shadow-2xl mx-4 animate-scale-in">
+      <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto card mx-4 animate-scale-in">
         {/* Close button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 transition-colors z-10"
+          className="absolute top-4 right-4 p-2 text-muted hover:text-foreground transition-colors z-10"
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -200,7 +200,7 @@ export function CreateVaultModal({
         </button>
 
         {/* Step indicator */}
-        <div className="pt-8 pb-6 px-8 border-b border-gray-100">
+        <div className="pt-8 pb-6 px-8 border-b border-border">
           <StepIndicator
             steps={steps}
             currentStep={currentStep}
@@ -230,24 +230,24 @@ export function CreateVaultModal({
 
           {/* Error message */}
           {error && (
-            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-600">
+            <div className="mt-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-sm text-red-400">
               {error}
             </div>
           )}
 
           {/* Status message */}
           {status && (
-            <div className="mt-4 p-3 bg-cyan-50 border border-cyan-200 rounded-lg text-sm text-cyan-600">
+            <div className="mt-4 p-3 bg-accent/10 border border-accent/30 rounded-lg text-sm text-accent">
               {status}
             </div>
           )}
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between p-6 border-t border-gray-100">
+        <div className="flex items-center justify-between p-6 border-t border-border">
           <button
             onClick={onClose}
-            className="px-6 py-3 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-full hover:bg-gray-50 transition-colors"
+            className="btn-ghost px-6 py-3 rounded-full"
           >
             Cancel
           </button>
@@ -256,7 +256,7 @@ export function CreateVaultModal({
             {currentStep > 1 && (
               <button
                 onClick={handleBack}
-                className="px-6 py-3 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-full hover:bg-gray-50 transition-colors flex items-center gap-2"
+                className="btn-ghost px-6 py-3 rounded-full flex items-center gap-2"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -268,7 +268,7 @@ export function CreateVaultModal({
             {currentStep < 3 ? (
               <button
                 onClick={handleNext}
-                className="px-6 py-3 text-sm font-medium text-white bg-cyan-400 rounded-full hover:bg-cyan-500 transition-colors"
+                className="btn-primary px-6 py-3 rounded-full"
               >
                 Next
               </button>
@@ -276,7 +276,7 @@ export function CreateVaultModal({
               <button
                 onClick={handleCreate}
                 disabled={isPending || !address}
-                className="px-6 py-3 text-sm font-medium text-white bg-cyan-400 rounded-full hover:bg-cyan-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="btn-primary px-6 py-3 rounded-full disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isPending ? "Creating..." : "Create New Vault"}
               </button>

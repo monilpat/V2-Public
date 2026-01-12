@@ -20,18 +20,18 @@ export function AssetToggle({
   icon,
 }: AssetToggleProps) {
   return (
-    <div className="inline-flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-full hover:border-gray-300 transition-colors">
+    <div className="inline-flex items-center gap-2 px-3 py-2 bg-background-secondary border border-border rounded-full hover:border-muted transition-colors">
       {/* Token icon placeholder */}
       {icon ? (
         <Image src={icon} alt={symbol} width={20} height={20} className="rounded-full" />
       ) : (
-        <div className="w-5 h-5 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center text-[10px] text-white font-bold">
+        <div className="w-5 h-5 rounded-full bg-gradient-to-br from-accent to-accent2 flex items-center justify-center text-[10px] text-black font-bold">
           {symbol.slice(0, 2)}
         </div>
       )}
       
       {/* Symbol */}
-      <span className="text-sm font-medium text-gray-700">{symbol}</span>
+      <span className="text-sm font-medium">{symbol}</span>
       
       {/* Toggle switch */}
       <button
@@ -39,14 +39,14 @@ export function AssetToggle({
         onClick={() => onChange(!enabled)}
         className={`
           relative w-10 h-6 rounded-full transition-colors duration-200 ease-in-out
-          ${enabled ? "bg-cyan-400" : "bg-gray-200"}
+          ${enabled ? "bg-accent" : "bg-muted/30"}
         `}
         role="switch"
         aria-checked={enabled}
       >
         <span
           className={`
-            absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-sm
+            absolute top-0.5 left-0.5 w-5 h-5 bg-background rounded-full shadow-sm
             transition-transform duration-200 ease-in-out
             ${enabled ? "translate-x-4" : "translate-x-0"}
           `}
@@ -58,7 +58,7 @@ export function AssetToggle({
         <button
           type="button"
           onClick={onRemove}
-          className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+          className="p-1 text-muted hover:text-red-500 transition-colors"
           aria-label={`Remove ${symbol}`}
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -94,14 +94,14 @@ export function Toggle({
       onClick={() => onChange(!enabled)}
       className={`
         relative ${s.track} rounded-full transition-colors duration-200 ease-in-out
-        ${enabled ? "bg-cyan-400" : "bg-gray-200"}
+        ${enabled ? "bg-accent" : "bg-muted/30"}
       `}
       role="switch"
       aria-checked={enabled}
     >
       <span
         className={`
-          absolute top-0.5 left-0.5 ${s.thumb} bg-white rounded-full shadow-sm
+          absolute top-0.5 left-0.5 ${s.thumb} bg-background rounded-full shadow-sm
           transition-transform duration-200 ease-in-out
           ${enabled ? s.translate : "translate-x-0"}
         `}

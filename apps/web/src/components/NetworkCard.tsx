@@ -14,7 +14,7 @@ const NetworkIcon = ({ chainId, className = "w-12 h-12" }: { chainId: number; cl
   switch (chainId) {
     case 1: // Ethereum
       return (
-        <div className={`${className} rounded-full bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center`}>
+        <div className={`${className} rounded-full bg-blue-500/20 dark:bg-blue-500/30 flex items-center justify-center`}>
           <svg viewBox="0 0 32 32" className="w-7 h-7">
             <path fill="#627EEA" d="M16 0L5 16l11 6.5L27 16 16 0z"/>
             <path fill="#627EEA" opacity="0.6" d="M16 22.5L5 16l11 16 11-16-11 6.5z"/>
@@ -23,7 +23,7 @@ const NetworkIcon = ({ chainId, className = "w-12 h-12" }: { chainId: number; cl
       );
     case 137: // Polygon
       return (
-        <div className={`${className} rounded-full bg-gradient-to-br from-purple-100 to-purple-200 flex items-center justify-center`}>
+        <div className={`${className} rounded-full bg-purple-500/20 dark:bg-purple-500/30 flex items-center justify-center`}>
           <svg viewBox="0 0 32 32" className="w-7 h-7">
             <path fill="#8247E5" d="M21.6 13.5l-4.8-2.8a1.8 1.8 0 00-1.6 0l-4.8 2.8a1.6 1.6 0 00-.8 1.4v5.6c0 .6.3 1.1.8 1.4l4.8 2.8c.5.3 1.1.3 1.6 0l4.8-2.8c.5-.3.8-.8.8-1.4v-5.6c0-.6-.3-1.1-.8-1.4z"/>
           </svg>
@@ -31,7 +31,7 @@ const NetworkIcon = ({ chainId, className = "w-12 h-12" }: { chainId: number; cl
       );
     case 10: // Optimism
       return (
-        <div className={`${className} rounded-full bg-gradient-to-br from-red-100 to-red-200 flex items-center justify-center`}>
+        <div className={`${className} rounded-full bg-red-500/20 dark:bg-red-500/30 flex items-center justify-center`}>
           <svg viewBox="0 0 32 32" className="w-7 h-7">
             <circle fill="#FF0420" cx="16" cy="16" r="12"/>
             <text x="16" y="20" textAnchor="middle" fill="white" fontSize="10" fontWeight="bold">OP</text>
@@ -40,7 +40,7 @@ const NetworkIcon = ({ chainId, className = "w-12 h-12" }: { chainId: number; cl
       );
     case 42161: // Arbitrum
       return (
-        <div className={`${className} rounded-full bg-gradient-to-br from-blue-100 to-cyan-200 flex items-center justify-center`}>
+        <div className={`${className} rounded-full bg-blue-500/20 dark:bg-cyan-500/30 flex items-center justify-center`}>
           <svg viewBox="0 0 32 32" className="w-7 h-7">
             <path fill="#28A0F0" d="M16 4L6 16l10 12 10-12L16 4z"/>
             <path fill="#96BEDC" d="M16 10l-5 6 5 6 5-6-5-6z"/>
@@ -49,7 +49,7 @@ const NetworkIcon = ({ chainId, className = "w-12 h-12" }: { chainId: number; cl
       );
     case 8453: // Base
       return (
-        <div className={`${className} rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center`}>
+        <div className={`${className} rounded-full bg-blue-600/20 dark:bg-blue-600/30 flex items-center justify-center`}>
           <svg viewBox="0 0 32 32" className="w-7 h-7">
             <circle fill="white" cx="16" cy="16" r="8"/>
             <circle fill="#0052FF" cx="16" cy="16" r="4"/>
@@ -58,8 +58,8 @@ const NetworkIcon = ({ chainId, className = "w-12 h-12" }: { chainId: number; cl
       );
     default:
       return (
-        <div className={`${className} rounded-full bg-gray-200 flex items-center justify-center`}>
-          <span className="text-gray-500 font-bold">?</span>
+        <div className={`${className} rounded-full bg-muted/20 flex items-center justify-center`}>
+          <span className="text-muted font-bold">?</span>
         </div>
       );
   }
@@ -82,23 +82,23 @@ const ExternalLinkIcon = () => (
 // DApp logo placeholder
 const DAppLogo = ({ name }: { name: string }) => {
   const colors: Record<string, string> = {
-    "1inch": "bg-red-100 text-red-600",
-    "Aave": "bg-purple-100 text-purple-600",
-    "Aerodrome": "bg-blue-100 text-blue-600",
-    "Compound": "bg-green-100 text-green-600",
-    "Fluid": "bg-cyan-100 text-cyan-600",
-    "KyberSwap": "bg-emerald-100 text-emerald-600",
-    "Odos": "bg-yellow-100 text-yellow-600",
-    "PancakeSwap": "bg-amber-100 text-amber-600",
-    "Pendle": "bg-teal-100 text-teal-600",
-    "Toros": "bg-indigo-100 text-indigo-600",
-    "Uniswap": "bg-pink-100 text-pink-600",
-    "Velodrome": "bg-slate-100 text-slate-600",
+    "1inch": "bg-red-500/20 text-red-500",
+    "Aave": "bg-purple-500/20 text-purple-400",
+    "Aerodrome": "bg-blue-500/20 text-blue-400",
+    "Compound": "bg-green-500/20 text-green-400",
+    "Fluid": "bg-cyan-500/20 text-cyan-400",
+    "KyberSwap": "bg-emerald-500/20 text-emerald-400",
+    "Odos": "bg-yellow-500/20 text-yellow-400",
+    "PancakeSwap": "bg-amber-500/20 text-amber-400",
+    "Pendle": "bg-teal-500/20 text-teal-400",
+    "Toros": "bg-indigo-500/20 text-indigo-400",
+    "Uniswap": "bg-pink-500/20 text-pink-400",
+    "Velodrome": "bg-slate-500/20 text-slate-400",
   };
 
   return (
     <div
-      className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold ${colors[name] || "bg-gray-100 text-gray-600"}`}
+      className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold ${colors[name] || "bg-muted/20 text-muted"}`}
       title={name}
     >
       {name.slice(0, 2)}
@@ -116,12 +116,13 @@ export function NetworkCard({
     <div
       onClick={onSelect}
       className={`
-        relative p-6 bg-white rounded-2xl border-2 cursor-pointer
+        relative p-6 rounded-2xl border-2 cursor-pointer
         transition-all duration-200 ease-out
         hover:shadow-lg hover:-translate-y-1
+        bg-card
         ${isSelected
-          ? "border-cyan-400 shadow-md shadow-cyan-100"
-          : "border-gray-100 hover:border-gray-200"
+          ? "border-accent shadow-md shadow-accent/20"
+          : "border-border hover:border-muted"
         }
       `}
     >
@@ -143,13 +144,13 @@ export function NetworkCard({
 
       {/* Network name with explorer link */}
       <div className="flex items-center justify-center gap-2 mb-4">
-        <h3 className="text-lg font-semibold text-gray-900">{network.name}</h3>
+        <h3 className="text-lg font-semibold">{network.name}</h3>
         <a
           href={network.blockExplorer}
           target="_blank"
           rel="noreferrer"
           onClick={(e) => e.stopPropagation()}
-          className="text-gray-400 hover:text-cyan-500 transition-colors"
+          className="text-muted hover:text-accent transition-colors"
         >
           <ExternalLinkIcon />
         </a>
@@ -160,14 +161,14 @@ export function NetworkCard({
         {network.features.map((feature) => (
           <div key={feature} className="flex items-center gap-2">
             <CheckIcon />
-            <span className="text-sm text-gray-600">{feature}</span>
+            <span className="text-sm text-muted">{feature}</span>
           </div>
         ))}
       </div>
 
       {/* Separator */}
       <div className="flex justify-center py-2">
-        <svg className="w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg className="w-4 h-4 text-muted/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
         </svg>
       </div>
@@ -178,7 +179,7 @@ export function NetworkCard({
           <DAppLogo key={dapp} name={dapp} />
         ))}
         {network.dapps.length > 6 && (
-          <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-xs text-gray-500">
+          <div className="w-8 h-8 rounded-full bg-muted/20 flex items-center justify-center text-xs text-muted">
             +{network.dapps.length - 6}
           </div>
         )}
@@ -190,7 +191,7 @@ export function NetworkCard({
           e.stopPropagation();
           onAssetsClick?.();
         }}
-        className="w-full text-center text-sm text-cyan-500 hover:text-cyan-600 font-medium transition-colors"
+        className="w-full text-center text-sm text-accent hover:text-accent/80 font-medium transition-colors"
       >
         Assets Available
       </button>

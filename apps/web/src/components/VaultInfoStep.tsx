@@ -24,31 +24,31 @@ export function VaultInfoStep({ data, onChange }: VaultInfoStepProps) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-gray-900">Create New Vault</h2>
-        <p className="text-sm text-gray-400 mt-1">V2 vault</p>
+        <h2 className="text-2xl font-bold">Create New Vault</h2>
+        <p className="text-sm text-muted mt-1">V2 vault</p>
       </div>
 
       {/* Vault Name & Symbol - Two columns */}
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-700">Vault Name</label>
+          <label className="text-sm font-medium">Vault Name</label>
           <input
             type="text"
             value={data.vaultName}
             onChange={(e) => onChange({ vaultName: e.target.value })}
             placeholder="Awesome Fund"
-            className="w-full h-12 px-4 border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent text-gray-900 placeholder:text-gray-400"
+            className="w-full h-12 px-4 border border-border rounded-xl bg-background-secondary focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent placeholder:text-muted"
           />
         </div>
         <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-700">Vault Symbol</label>
+          <label className="text-sm font-medium">Vault Symbol</label>
           <input
             type="text"
             value={data.vaultSymbol}
             onChange={(e) => onChange({ vaultSymbol: e.target.value.toUpperCase() })}
             placeholder="DHVT"
             maxLength={10}
-            className="w-full h-12 px-4 border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent text-gray-900 placeholder:text-gray-400 uppercase"
+            className="w-full h-12 px-4 border border-border rounded-xl bg-background-secondary focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent placeholder:text-muted uppercase"
           />
         </div>
       </div>
@@ -57,7 +57,7 @@ export function VaultInfoStep({ data, onChange }: VaultInfoStepProps) {
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <div className="flex items-center gap-2">
-            <label className="text-sm font-medium text-gray-700">Manager Name</label>
+            <label className="text-sm font-medium">Manager Name</label>
             <InfoTooltip content="Your display name visible to depositors" />
           </div>
           <input
@@ -65,23 +65,23 @@ export function VaultInfoStep({ data, onChange }: VaultInfoStepProps) {
             value={data.managerName}
             onChange={(e) => onChange({ managerName: e.target.value })}
             placeholder="Day Ralio"
-            className="w-full h-12 px-4 border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent text-gray-900 placeholder:text-gray-400"
+            className="w-full h-12 px-4 border border-border rounded-xl bg-background-secondary focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent placeholder:text-muted"
           />
         </div>
         <div className="space-y-2">
           <div className="flex items-center gap-2">
-            <label className="text-sm font-medium text-gray-700">Vault Privacy</label>
+            <label className="text-sm font-medium">Vault Privacy</label>
             <InfoTooltip content="Private vaults require whitelist for deposits" />
           </div>
-          <div className="flex h-12 rounded-xl border border-gray-200 overflow-hidden">
+          <div className="flex h-12 rounded-xl border border-border overflow-hidden">
             <button
               type="button"
               onClick={() => onChange({ isPrivate: true })}
               className={`
                 flex-1 text-sm font-medium transition-colors
                 ${data.isPrivate 
-                  ? "bg-cyan-400 text-white" 
-                  : "bg-white text-gray-500 hover:bg-gray-50"
+                  ? "bg-accent text-accent-foreground" 
+                  : "bg-background-secondary text-muted hover:bg-muted/20"
                 }
               `}
             >
@@ -93,8 +93,8 @@ export function VaultInfoStep({ data, onChange }: VaultInfoStepProps) {
               className={`
                 flex-1 text-sm font-medium transition-colors
                 ${!data.isPrivate 
-                  ? "bg-cyan-400 text-white" 
-                  : "bg-white text-gray-500 hover:bg-gray-50"
+                  ? "bg-accent text-accent-foreground" 
+                  : "bg-background-secondary text-muted hover:bg-muted/20"
                 }
               `}
             >
@@ -106,12 +106,12 @@ export function VaultInfoStep({ data, onChange }: VaultInfoStepProps) {
 
       {/* Manager Address */}
       <div className="space-y-2">
-        <label className="text-sm font-medium text-gray-700">Manager Address</label>
+        <label className="text-sm font-medium">Manager Address</label>
         <input
           type="text"
           value={data.managerAddress}
           disabled
-          className="w-full h-12 px-4 border border-gray-200 rounded-xl bg-gray-50 text-gray-500 cursor-not-allowed font-mono text-sm"
+          className="w-full h-12 px-4 border border-border rounded-xl bg-muted/10 text-muted cursor-not-allowed font-mono text-sm"
         />
       </div>
 
@@ -130,7 +130,7 @@ export function VaultInfoStep({ data, onChange }: VaultInfoStepProps) {
       <div className="grid grid-cols-3 gap-4">
         <div className="space-y-2">
           <div className="flex items-center gap-2">
-            <label className="text-sm font-medium text-gray-700">Management Fee</label>
+            <label className="text-sm font-medium">Management Fee</label>
             <InfoTooltip content="Annual fee on AUM (max 3%)" />
           </div>
           <div className="relative">
@@ -141,13 +141,13 @@ export function VaultInfoStep({ data, onChange }: VaultInfoStepProps) {
               min={0}
               max={3}
               step={0.1}
-              className="w-full h-12 px-4 pr-10 border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent text-gray-900"
+              className="w-full h-12 px-4 pr-10 border border-border rounded-xl bg-background-secondary focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent"
             />
-            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">%</span>
+            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-muted">%</span>
           </div>
         </div>
         <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-700">Entry Fee</label>
+          <label className="text-sm font-medium">Entry Fee</label>
           <div className="relative">
             <input
               type="number"
@@ -156,13 +156,13 @@ export function VaultInfoStep({ data, onChange }: VaultInfoStepProps) {
               min={0}
               max={1}
               step={0.1}
-              className="w-full h-12 px-4 pr-10 border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent text-gray-900"
+              className="w-full h-12 px-4 pr-10 border border-border rounded-xl bg-background-secondary focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent"
             />
-            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">%</span>
+            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-muted">%</span>
           </div>
         </div>
         <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-700">Exit Fee</label>
+          <label className="text-sm font-medium">Exit Fee</label>
           <div className="relative">
             <input
               type="number"
@@ -171,9 +171,9 @@ export function VaultInfoStep({ data, onChange }: VaultInfoStepProps) {
               min={0}
               max={1}
               step={0.1}
-              className="w-full h-12 px-4 pr-10 border border-gray-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent text-gray-900"
+              className="w-full h-12 px-4 pr-10 border border-border rounded-xl bg-background-secondary focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent"
             />
-            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">%</span>
+            <span className="absolute right-4 top-1/2 -translate-y-1/2 text-muted">%</span>
           </div>
         </div>
       </div>

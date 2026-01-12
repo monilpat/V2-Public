@@ -31,8 +31,8 @@ export function StepIndicator({ steps, currentStep, onStepClick }: StepIndicator
                 className={`
                   w-4 h-4 rounded-full border-2 transition-all duration-200
                   ${isCompleted || isActive
-                    ? "bg-cyan-400 border-cyan-400"
-                    : "bg-white border-gray-300"
+                    ? "bg-accent border-accent"
+                    : "bg-background border-muted"
                   }
                   ${!isPending && onStepClick ? "cursor-pointer hover:scale-110" : "cursor-default"}
                 `}
@@ -40,7 +40,7 @@ export function StepIndicator({ steps, currentStep, onStepClick }: StepIndicator
               <span
                 className={`
                   mt-2 text-xs font-medium transition-colors duration-200
-                  ${isActive ? "text-cyan-500" : "text-gray-400"}
+                  ${isActive ? "text-accent" : "text-muted"}
                 `}
               >
                 {step.label}
@@ -52,7 +52,7 @@ export function StepIndicator({ steps, currentStep, onStepClick }: StepIndicator
               <div
                 className={`
                   w-24 h-0.5 mx-2 transition-colors duration-200
-                  ${isCompleted ? "bg-cyan-400" : "bg-gray-200"}
+                  ${isCompleted ? "bg-accent" : "bg-border"}
                 `}
               />
             )}
