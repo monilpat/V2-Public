@@ -16,11 +16,14 @@ export function Nav() {
           <Link href="/explore" className="text-muted hover:text-white">
             Explore
           </Link>
-          <Link href="/stats" className="text-muted hover:text-white">
-            Stats
-          </Link>
           <Link href="/my-deposits" className="text-muted hover:text-white">
             My Deposits
+          </Link>
+          <Link href="/manage" className="text-muted hover:text-white">
+            Manage
+          </Link>
+          <Link href="/stats" className="text-muted hover:text-white">
+            Stats
           </Link>
         </nav>
       </div>

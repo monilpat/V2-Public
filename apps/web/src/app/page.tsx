@@ -476,6 +476,7 @@ export default function Page() {
                     assets,
                   ],
                   chainId: 137,
+                  gas: 7_000_000n,
                 });
                 setCreateStatus(`Tx sent: ${txHash}`);
               } catch (err: any) {
