@@ -42,7 +42,7 @@
     "check:oracles:ci": "pnpm check:oracles --network arbitrum && pnpm check:oracles --network base && pnpm check:oracles --network ovm && pnpm check:oracles --network polygon",
     "abigen": "hardhat export-abi",
     "preinstall": "npx only-allow pnpm",
-    "postinstall": "pnpm compile",
+    "postinstall": "if [ \"$VERCEL\" = \"1\" ]; then echo \"skip hardhat compile on vercel\"; else pnpm compile; fi",
     "prepare": "husky install"
   },
   "author": "dHEDGE Team",

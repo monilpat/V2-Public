@@ -120,9 +120,9 @@ function PoolCard({ pool }: { pool: { name: string; address: string; symbol: str
                   try {
                     setStatus("Setting trader...");
                     const tx = await axios.post(`${API_BASE}/setTrader?pool=${pool.address}`, { traderAccount: trader });
-                    setStatus(`Tx: ${tx.data.msg || "sent"}`);
+                    const m = `Tx: ${tx.data.msg || "sent"}`; push(m, "success"); setStatus(m);
                   } catch (err: any) {
-                    setStatus(err?.message || "Error");
+                    const m = err?.message || "Error"; setStatus(m); push(m, "error");
                   }
                 }}
               >
@@ -148,13 +148,15 @@ function PoolCard({ pool }: { pool: { name: string; address: string; symbol: str
                 className="btn-primary"
                 onClick={async () => {
                   try {
-                    setStatus("Approving...");
+                    if (!depositAsset || !depositAmount) { setStatus("Enter asset and amount"); return; }
+                    clear(); setStatus("Approving...");
                     await approveDeposit(pool.address, depositAsset);
-                    clear(); setStatus("Depositing...");
+                    push("Approved deposit", "success");
+                    setStatus("Depositing...");
                     const tx = await deposit(pool.address, depositAsset, depositAmount);
-                    setStatus(`Tx: ${tx.data.msg || "sent"}`);
+                    const m = `Tx: ${tx.data.msg || "sent"}`; push(m, "success"); setStatus(m);
                   } catch (err: any) {
-                    setStatus(err?.message || "Error");
+                    const m = err?.message || "Error"; setStatus(m); push(m, "error");
                   }
                 }}
               >
@@ -195,9 +197,9 @@ function PoolCard({ pool }: { pool: { name: string; address: string; symbol: str
                       share: Number(share),
                       slippage: 0.5,
                     });
-                    setStatus(`Tx: ${tx.data.msg || "sent"}`);
+                    const m = `Tx: `; push(m, "success"); setStatus(m);
                   } catch (err: any) {
-                    setStatus(err?.message || "Error");
+                    const m = err?.message || "Error"; setStatus(m); push(m, "error");
                   }
                 }}
               >
@@ -214,16 +216,16 @@ function PoolCard({ pool }: { pool: { name: string; address: string; symbol: str
                   if (!shareBalance || !shareDecimals) return;
                   const amount = shareBalance; // full balance
                   try {
-                    setStatus("Withdrawing...");
+                    clear(); setStatus("Withdrawing...");
                     await writeContractAsync({
                       address: pool.address as `0x${string}`,
                       abi: poolLogicAbi,
                       functionName: "withdraw",
                       args: [amount],
                     });
-                    setStatus("Withdraw transaction sent");
+                    setStatus("Withdraw transaction sent"); push("Withdraw sent", "success");
                   } catch (err: any) {
-                    setStatus(err?.message || "Error");
+                    const m = err?.message || "Error"; setStatus(m); push(m, "error");
                   }
                 }}
               >
