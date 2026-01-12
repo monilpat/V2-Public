@@ -1,0 +1,1 @@
+"use strict";exports.id=1851,exports.ids=[1851],exports.modules={91851:(e,t,i)=>{i.d(t,{createPublicClient:()=>s.v,defineChain:()=>r.a,http:()=>d.d});var s=i(78394),d=i(28530),r=i(48721)}};

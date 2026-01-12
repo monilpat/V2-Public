@@ -1,2 +1,2 @@
-import { polygonConfig } from "../../../config/polygon";
+import { polygonConfig } from "@/config/polygon";
 export { polygonConfig };
