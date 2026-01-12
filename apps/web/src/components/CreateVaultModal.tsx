@@ -154,6 +154,8 @@ export function CreateVaultModal({
           vaultInfo.vaultSymbol,
           BigInt(perfFeeBps),
           BigInt(mgmtFeeBps),
+          BigInt(Math.round(vaultInfo.entryFee * 100)),
+          BigInt(Math.round(vaultInfo.exitFee * 100)),
           assets,
         ],
         chainId: selectedNetwork,

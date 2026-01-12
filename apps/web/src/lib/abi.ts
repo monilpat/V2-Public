@@ -133,6 +133,8 @@ export const poolFactoryAbi = [
       { "internalType": "string", "name": "_fundSymbol", "type": "string" },
       { "internalType": "uint256", "name": "_performanceFeeNumerator", "type": "uint256" },
       { "internalType": "uint256", "name": "_managerFeeNumerator", "type": "uint256" },
+      { "internalType": "uint256", "name": "_entryFeeNumerator", "type": "uint256" },
+      { "internalType": "uint256", "name": "_exitFeeNumerator", "type": "uint256" },
       {
         "components": [
           { "internalType": "address", "name": "asset", "type": "address" },
