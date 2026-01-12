@@ -79,7 +79,7 @@ export default function PoolPage() {
           ← Back to Explore
         </Link>
       </div>
-      <Toast />
+      {Toast}
 
       {/* Performance Chart */}
       {history && history.length > 0 && (
@@ -164,6 +164,79 @@ export default function PoolPage() {
               >
                 Mint Fees
               </button>
+              <div className="pt-4 space-y-2">
+                <div className="text-sm font-semibold">Announce Fee Change</div>
+                <div className="grid grid-cols-2 gap-2">
+                  <input
+                    className="bg-white/5 rounded px-2 py-1 text-xs"
+                    placeholder="Perf fee (bps)"
+                    value={feeDraft.perf}
+                    onChange={(e) => setFeeDraft((s) => ({ ...s, perf: e.target.value }))}
+                  />
+                  <input
+                    className="bg-white/5 rounded px-2 py-1 text-xs"
+                    placeholder="Mgmt fee (bps)"
+                    value={feeDraft.mgmt}
+                    onChange={(e) => setFeeDraft((s) => ({ ...s, mgmt: e.target.value }))}
+                  />
+                  <input
+                    className="bg-white/5 rounded px-2 py-1 text-xs"
+                    placeholder="Entry fee (bps)"
+                    value={feeDraft.entry}
+                    onChange={(e) => setFeeDraft((s) => ({ ...s, entry: e.target.value }))}
+                  />
+                  <input
+                    className="bg-white/5 rounded px-2 py-1 text-xs"
+                    placeholder="Exit fee (bps)"
+                    value={feeDraft.exit}
+                    onChange={(e) => setFeeDraft((s) => ({ ...s, exit: e.target.value }))}
+                  />
+                </div>
+                <button
+                  className="btn-ghost"
+                  disabled={!managerLogic}
+                  onClick={async () => {
+                    if (!managerLogic) return;
+                    try {
+                      const perf = BigInt(Number(feeDraft.perf || "0"));
+                      const mgmt = BigInt(Number(feeDraft.mgmt || "0"));
+                      const entry = BigInt(Number(feeDraft.entry || "0"));
+                      const exit = BigInt(Number(feeDraft.exit || "0"));
+                      push("Announcing fee change (14d delay)...", "info");
+                      await writeContractAsync({
+                        address: managerLogic as `0x${string}`,
+                        abi: poolManagerLogicAbi,
+                        functionName: "announceFeeIncrease",
+                        args: [perf, mgmt, entry, exit],
+                      });
+                      push("Fee change announced. Commit after delay.", "success");
+                    } catch (e: any) {
+                      push(e?.message || "Announce failed", "error");
+                    }
+                  }}
+                >
+                  Announce Fees (14d)
+                </button>
+                <button
+                  className="btn-ghost"
+                  disabled={!managerLogic}
+                  onClick={async () => {
+                    try {
+                      push("Committing fee change...", "info");
+                      await writeContractAsync({
+                        address: managerLogic as `0x${string}`,
+                        abi: poolManagerLogicAbi,
+                        functionName: "commitFeeIncrease",
+                      });
+                      push("Fee change committed", "success");
+                    } catch (e: any) {
+                      push(e?.message || "Commit failed", "error");
+                    }
+                  }}
+                >
+                  Commit Fees
+                </button>
+              </div>
             </div>
           )}
         </div>

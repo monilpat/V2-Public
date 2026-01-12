@@ -12,6 +12,7 @@ export type PoolMeta = {
   returns1w?: number;
   returns1m?: number;
   riskScore?: number;
+  score?: number;
 };
 
 export const fetchPools = async (network?: string): Promise<PoolMeta[]> => {

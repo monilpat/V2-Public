@@ -6,12 +6,12 @@ import { VaultCard } from "@/components/VaultCard";
 import { Nav } from "@/components/nav";
 import { NetworkSelector } from "@/components/network-selector";
 
-type SortOption = "tvl" | "returns24h" | "returns1w" | "returns1m";
+type SortOption = "tvl" | "score";
 
 export default function ExplorePage() {
   const [search, setSearch] = useState("");
   const [chain, setChain] = useState("polygon");
-  const [sortBy, setSortBy] = useState<SortOption>("tvl");
+  const [sortBy, setSortBy] = useState<SortOption>("score");
 
   const { data: pools, isLoading } = useQuery({
     queryKey: ["pools", chain],
@@ -33,9 +33,9 @@ export default function ExplorePage() {
 
   // Sort
   filteredPools = [...filteredPools].sort((a: any, b: any) => {
-    const aVal = a[sortBy] || 0;
-    const bVal = b[sortBy] || 0;
-    return sortBy === "tvl" ? bVal - aVal : bVal - aVal;
+    const aVal = sortBy === "tvl" ? a.tvl || 0 : a.score || 0;
+    const bVal = sortBy === "tvl" ? b.tvl || 0 : b.score || 0;
+    return bVal - aVal;
   });
 
   return (
@@ -62,9 +62,7 @@ export default function ExplorePage() {
           className="bg-white/5 rounded-lg px-4 py-2 text-sm"
         >
           <option value="tvl">Sort by TVL</option>
-          <option value="returns24h">Sort by 24h Return</option>
-          <option value="returns1w">Sort by 1W Return</option>
-          <option value="returns1m">Sort by 1M Return</option>
+          <option value="score">Sort by Score</option>
         </select>
       </div>
 

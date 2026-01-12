@@ -75,6 +75,29 @@ poolsRouter.get("/pools", async (req: Request, res: Response) => {
           const returns1m = price1m > 0 ? ((sharePrice - price1m) / price1m) * 100 : 0;
           recordPoint(addr, { timestamp: now, sharePrice, tvl });
 
+          // Risk/volatility estimate from history
+          let riskScore = 0;
+          if (history.length > 1) {
+            const prices = history.map((h) => h.sharePrice);
+            const returnsArr: number[] = [];
+            for (let i = 1; i < prices.length; i++) {
+              if (prices[i - 1] > 0) {
+                returnsArr.push((prices[i] - prices[i - 1]) / prices[i - 1]);
+              }
+            }
+            if (returnsArr.length) {
+              const avg = returnsArr.reduce((a, b) => a + b, 0) / returnsArr.length;
+              const variance = returnsArr.reduce((sum, r) => sum + Math.pow(r - avg, 2), 0) / returnsArr.length;
+              const vol = Math.sqrt(variance) * Math.sqrt(365);
+              riskScore = Math.min(100, Math.max(0, vol * 1000));
+            }
+          }
+
+          const score =
+            returns1m !== 0 && tvl > 0
+              ? ((returns1m / 100) / (1 + riskScore / 100)) * Math.sqrt(Math.max(tvl, 1))
+              : 0;
+
           return {
             address: addr,
             name,
@@ -83,7 +106,8 @@ poolsRouter.get("/pools", async (req: Request, res: Response) => {
             returns24h,
             returns1w,
             returns1m,
-            riskScore: 0, // computed in metrics endpoint; keep 0 here
+            riskScore: Math.round(riskScore),
+            score,
             network,
           };
         } catch (_) {
@@ -96,6 +120,7 @@ poolsRouter.get("/pools", async (req: Request, res: Response) => {
             returns1w: 0,
             returns1m: 0,
             riskScore: 50,
+            score: 0,
             network,
           };
         }

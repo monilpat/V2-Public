@@ -344,6 +344,8 @@ export default function Page() {
   const [fee, setFee] = useState("0");
   const [mgmtFee, setMgmtFee] = useState("0");
   const [supportedAssets, setSupportedAssets] = useState<string[]>([]);
+  const [entryFee, setEntryFee] = useState("0");
+  const [exitFee, setExitFee] = useState("0");
   const [createStatus, setCreateStatus] = useState<string | null>(null);
   const { writeContractAsync: writeFactory } = useWriteContract();
   const { address } = useAccount();
@@ -406,6 +408,18 @@ export default function Page() {
             value={mgmtFee}
             onChange={(e) => setMgmtFee(e.target.value)}
           />
+          <input
+            className="bg-white/5 rounded-lg px-3 py-2"
+            placeholder="Entry fee numerator (<= 100)"
+            value={entryFee}
+            onChange={(e) => setEntryFee(e.target.value)}
+          />
+          <input
+            className="bg-white/5 rounded-lg px-3 py-2"
+            placeholder="Exit fee numerator (<= 100)"
+            value={exitFee}
+            onChange={(e) => setExitFee(e.target.value)}
+          />
         </div>
         <div className="space-y-2">
           <div className="text-sm text-muted">Supported deposit assets (comma separated addresses, max 12)</div>
@@ -427,6 +441,12 @@ export default function Page() {
               const mgmtNum = Number(mgmtFee || "0");
               if (mgmtNum > 300) {
                 setCreateStatus("Management fee exceeds cap (3%)");
+                return;
+              }
+              const entryNum = Number(entryFee || "0");
+              const exitNum = Number(exitFee || "0");
+              if (entryNum > 100 || exitNum > 100) {
+                setCreateStatus("Entry/exit fee exceeds cap (1%)");
                 return;
               }
               if (!managerName || !poolName || !symbol || supportedAssets.length === 0) {
@@ -455,14 +475,16 @@ export default function Page() {
                     false, // public pool
                     address,
                     managerName,
-                    poolName,
-                    symbol,
-                    BigInt(feeNum),
-                    BigInt(mgmtNum),
-                    assets,
-                  ],
-                  chainId: 137,
-                });
+                  poolName,
+                  symbol,
+                  BigInt(feeNum),
+                  BigInt(mgmtNum),
+                  assets,
+                  BigInt(entryNum),
+                  BigInt(exitNum),
+                ],
+                chainId: 137,
+              });
                 setCreateStatus(`Tx sent: ${txHash}`);
               } catch (err: any) {
                 setCreateStatus(err?.message || "Error");
