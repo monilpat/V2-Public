@@ -14,6 +14,8 @@ import { Nav } from "@/components/nav";
 import { fetchPools } from "@/lib/pools";
 import { StatCard } from "@/components/stats";
 import { useToast } from "@/components/toast";
+import { chainName } from "@/lib/chains";
+import { NetworkSelector } from "@/components/network-selector";
 
 const fetchComposition = async (pool: string) => {
   const res = await axios.get(`${API_BASE}/poolComposition`, { params: { pool } });
@@ -32,7 +34,7 @@ const computeTvl = async (composition: any[]) => {
   return total;
 };
 
-function PoolCard({ pool }: { pool: { name: string; address: string; symbol: string } }) {
+function PoolCard({ pool, defaultNetwork }: { pool: { name: string; address: string; symbol: string; network?: number }; defaultNetwork: number }) {
   const { Toast, push, clear } = useToast();
   const { data, isLoading, error } = useQuery({
     queryKey: ["composition", pool.address],
@@ -81,7 +83,12 @@ function PoolCard({ pool }: { pool: { name: string; address: string; symbol: str
           <div className="text-sm text-muted">Pool</div>
           <div className="text-xl font-semibold">{pool.name}</div>
         </div>
-        <span className="px-3 py-1 rounded-full bg-white/5 text-sm">{pool.symbol}</span>
+        <div className="flex gap-2">
+          <span className="px-3 py-1 rounded-full bg-white/5 text-sm">{pool.symbol}</span>
+          <span className="px-3 py-1 rounded-full bg-white/10 text-xs">
+            {chainName(pool.network || defaultNetwork)}
+          </span>
+        </div>
       </div>
       {tvl !== undefined && (
         <div className="text-sm">
@@ -319,11 +326,18 @@ function Wallet() {
 }
 
 export default function Page() {
+  const [network, setNetwork] = useState("polygon");
+
   const { data: poolAddresses } = useQuery({
-    queryKey: ["pools"],
-    queryFn: fetchPools,
+    queryKey: ["pools", network],
+    queryFn: () => fetchPools(network),
   });
-  const pools = (poolAddresses ?? polygonConfig.pools).map((p: any) => ({ name: p.name || p.address || p, address: p.address || p, symbol: p.symbol || "POOL" }));
+  const pools = (poolAddresses ?? polygonConfig.pools).map((p: any) => ({
+    name: p.name || p.address || p,
+    address: p.address || p,
+    symbol: p.symbol || "POOL",
+    network: p.network,
+  }));
   const [managerName, setManagerName] = useState("");
   const [poolName, setPoolName] = useState("");
   const [symbol, setSymbol] = useState("");
@@ -335,14 +349,19 @@ export default function Page() {
     <div className="space-y-8">
       <Nav />
       <header className="flex flex-col gap-2">
-        <div className="text-sm text-muted">Polygon Mainnet</div>
-        <h1 className="text-3xl font-bold">dHEDGE Vaults</h1>
-        <p className="text-muted mt-1">Create, deposit, withdraw, and trade inside permissioned vaults.</p>
+        <div className="flex items-center gap-3">
+          <div>
+            <div className="text-sm text-muted">Network</div>
+            <h1 className="text-3xl font-bold">dHEDGE Vaults</h1>
+            <p className="text-muted mt-1">Create, deposit, withdraw, and trade inside permissioned vaults.</p>
+          </div>
+          <NetworkSelector value={network} onChange={setNetwork} disabledIds={[1,10,42161]} />
+        </div>
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
         <StatCard label="Pools" value={(poolAddresses?.length || pools.length).toString()} />
-        <StatCard label="Network" value="Polygon" hint="Factory live" />
+        <StatCard label="Network" value={chainName(137)} hint="Factory live" />
         <StatCard label="Status" value="Alpha" hint="On-chain TVL live, PnL WIP" />
       </div>
 
@@ -425,7 +444,7 @@ export default function Page() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {pools.map((pool) => (
           <Link key={pool.address} href={`/pool/${pool.address}`} className="block">
-            <PoolCard pool={pool} />
+            <PoolCard pool={pool} defaultNetwork={137} />
           </Link>
         ))}
       </div>

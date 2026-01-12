@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { fetchPools } from "@/lib/pools";
 import { VaultCard } from "@/components/VaultCard";
 import { Nav } from "@/components/nav";
+import { NetworkSelector } from "@/components/network-selector";
 
 type SortOption = "tvl" | "returns24h" | "returns1w" | "returns1m";
 
@@ -14,7 +15,7 @@ export default function ExplorePage() {
 
   const { data: pools, isLoading } = useQuery({
     queryKey: ["pools", chain],
-    queryFn: () => fetchPools(),
+    queryFn: () => fetchPools(chain),
   });
 
   let filteredPools = pools || [];
@@ -54,13 +55,7 @@ export default function ExplorePage() {
           onChange={(e) => setSearch(e.target.value)}
           className="flex-1 bg-white/5 rounded-lg px-4 py-2 text-sm"
         />
-        <select
-          value={chain}
-          onChange={(e) => setChain(e.target.value)}
-          className="bg-white/5 rounded-lg px-4 py-2 text-sm"
-        >
-          <option value="polygon">Polygon</option>
-        </select>
+        <NetworkSelector value={chain} onChange={setChain} disabledIds={[1,10,42161]} />
         <select
           value={sortBy}
           onChange={(e) => setSortBy(e.target.value as SortOption)}

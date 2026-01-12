@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ethers } from "ethers";
-import { Dhedge, Network } from "@dhedge/v2-sdk";
+import { getDhedgeReadOnly, getProvider } from "@/lib/dhedge-readonly";
 import { polygonConfig } from "@/config/polygon";
 
 // Simple ERC20 ABI for name/symbol
@@ -17,12 +17,6 @@ const FACTORY_ABI = [
   "function getDeployedFunds() view returns (address[])",
 ];
 
-// Helper to get provider
-const getProvider = () => {
-  const rpc = process.env.NEXT_PUBLIC_POLYGON_RPC;
-  if (!rpc) throw new Error("NEXT_PUBLIC_POLYGON_RPC not configured");
-  return new ethers.providers.JsonRpcProvider(rpc);
-};
 
 // Helper to get factory
 const getFactory = () => {
@@ -61,7 +55,7 @@ export async function GET(request: NextRequest) {
     const pools: string[] = await factory.getDeployedFunds();
     
     const provider = getProvider();
-    const dhedge = new Dhedge(provider, Network.POLYGON);
+    const dhedge = getDhedgeReadOnly();
     
     const results = await Promise.all(
       pools.map(async (addr) => {

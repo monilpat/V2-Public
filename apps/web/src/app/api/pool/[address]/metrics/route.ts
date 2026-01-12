@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ethers } from "ethers";
-import { Dhedge, Network } from "@dhedge/v2-sdk";
+import { getDhedgeReadOnly, getProvider } from "@/lib/dhedge-readonly";
 import { formatUnits } from "ethers/lib/utils";
 
 const ERC20_ABI = [
@@ -16,12 +16,6 @@ const MANAGER_ABI = [
   "function trader() view returns (address)",
   "function getFee() view returns (uint256, uint256, uint256, uint256, uint256)",
 ];
-
-const getProvider = () => {
-  const rpc = process.env.NEXT_PUBLIC_POLYGON_RPC;
-  if (!rpc) throw new Error("NEXT_PUBLIC_POLYGON_RPC not configured");
-  return new ethers.providers.JsonRpcProvider(rpc);
-};
 
 // Helper to compute TVL
 const computeTvl = async (composition: any[]): Promise<number> => {
@@ -112,7 +106,7 @@ export async function GET(
   try {
     const poolAddress = params.address;
     const provider = getProvider();
-    const dhedge = new Dhedge(provider, Network.POLYGON);
+    const dhedge = getDhedgeReadOnly();
     const pool = await dhedge.loadPool(poolAddress);
     const composition = await pool.getComposition();
     const tvl = await computeTvl(composition);

@@ -1,13 +1,16 @@
 "use client";
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { fetchProtocolStats } from "@/lib/metrics";
 import { StatCard } from "@/components/stats";
 import { Nav } from "@/components/nav";
+import { NetworkSelector } from "@/components/network-selector";
 
 export default function StatsPage() {
+  const [network, setNetwork] = useState("polygon");
   const { data: stats, isLoading } = useQuery({
-    queryKey: ["protocolStats"],
-    queryFn: () => fetchProtocolStats(),
+    queryKey: ["protocolStats", network],
+    queryFn: () => fetchProtocolStats(network),
   });
 
   return (
@@ -17,6 +20,7 @@ export default function StatsPage() {
         <div className="text-sm text-muted">Protocol Statistics</div>
         <h1 className="text-3xl font-bold">dHEDGE Protocol Overview</h1>
         <p className="text-muted mt-1">Total value locked, vaults, managers, and fees across all networks.</p>
+        <NetworkSelector value={network} onChange={setNetwork} disabledIds={[1,10,42161]} />
       </header>
 
       {isLoading ? (

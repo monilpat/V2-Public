@@ -26,5 +26,6 @@ export const fetchPools = async (network?: string): Promise<PoolMeta[]> => {
     address: p.address || p,
     name: p.name || p.address || p,
     symbol: p.symbol || "POOL",
+    network: 137,
   }));
 };

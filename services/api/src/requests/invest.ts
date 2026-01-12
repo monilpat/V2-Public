@@ -4,7 +4,7 @@ import { ethers } from "ethers";
 import { formatUnits } from "ethers/lib/utils";
 import { dhedge } from "../dhedge";
 import { resolveNetwork } from "../utils/network";
-import { getFactory, provider } from "../utils/factory";
+import { getFactory, getProvider } from "../utils/factory";
 import { fetchPriceUSD } from "../utils/prices";
 import erc20 from "../../abi/ERC20.json";
 
@@ -41,7 +41,8 @@ investRouter.get("/user/:address/deposits", async (req: Request, res: Response) 
   try {
     const network = resolveNetwork(req.query.network as string | undefined);
     const userAddress = req.params.address;
-    const factory = getFactory();
+    const provider = getProvider(network);
+    const factory = getFactory(network);
     const pools: string[] = await factory.getDeployedFunds();
 
     const deposits = await Promise.all(

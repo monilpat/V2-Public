@@ -1,17 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ethers } from "ethers";
-import { Dhedge, Network } from "@dhedge/v2-sdk";
+import { getDhedgeReadOnly, getProvider } from "@/lib/dhedge-readonly";
 import { polygonConfig } from "@/config/polygon";
 
 const FACTORY_ABI = [
   "function getDeployedFunds() view returns (address[])",
 ];
-
-const getProvider = () => {
-  const rpc = process.env.NEXT_PUBLIC_POLYGON_RPC;
-  if (!rpc) throw new Error("NEXT_PUBLIC_POLYGON_RPC not configured");
-  return new ethers.providers.JsonRpcProvider(rpc);
-};
 
 const getFactory = () => {
   const provider = getProvider();
@@ -23,7 +17,7 @@ export async function GET(request: NextRequest) {
     const provider = getProvider();
     const factory = getFactory();
     const pools: string[] = await factory.getDeployedFunds();
-    const dhedge = new Dhedge(provider, Network.POLYGON);
+    const dhedge = getDhedgeReadOnly();
 
     let totalTvl = 0;
     const managerSet = new Set<string>();

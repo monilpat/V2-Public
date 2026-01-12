@@ -1,16 +1,19 @@
 "use client";
 import { useAccount } from "wagmi";
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { fetchUserDeposits } from "@/lib/metrics";
 import { Nav } from "@/components/nav";
 import Link from "next/link";
 import { formatReturns } from "@/lib/returns";
+import { NetworkSelector } from "@/components/network-selector";
 
 export default function MyDepositsPage() {
+  const [network, setNetwork] = useState("polygon");
   const { address, isConnected } = useAccount();
   const { data: deposits, isLoading } = useQuery({
-    queryKey: ["userDeposits", address],
-    queryFn: () => (address ? fetchUserDeposits(address) : []),
+    queryKey: ["userDeposits", address, network],
+    queryFn: () => (address ? fetchUserDeposits(address, network) : []),
     enabled: !!address && isConnected,
   });
 
@@ -37,6 +40,7 @@ export default function MyDepositsPage() {
         <p className="text-muted mt-1">
           Total Value: <span className="font-semibold">${totalValue.toLocaleString(undefined, { maximumFractionDigits: 2 })}</span>
         </p>
+        <NetworkSelector value={network} onChange={setNetwork} disabledIds={[1,10,42161]} />
       </header>
 
       {isLoading ? (

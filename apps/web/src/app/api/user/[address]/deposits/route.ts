@@ -1,46 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ethers } from "ethers";
 import { Dhedge, Network } from "@dhedge/v2-sdk";
-import { formatUnits } from "ethers/lib/utils";
 import { polygonConfig } from "@/config/polygon";
-
-const FACTORY_ABI = [
-  "function getDeployedFunds() view returns (address[])",
-];
 
 const ERC20_ABI = [
   "function name() view returns (string)",
   "function symbol() view returns (string)",
-  "function decimals() view returns (uint8)",
   "function totalSupply() view returns (uint256)",
   "function balanceOf(address) view returns (uint256)",
 ];
+
+const FACTORY_ABI = ["function getDeployedFunds() view returns (address[])"];
 
 const getProvider = () => {
   const rpc = process.env.NEXT_PUBLIC_POLYGON_RPC;
   if (!rpc) throw new Error("NEXT_PUBLIC_POLYGON_RPC not configured");
   return new ethers.providers.JsonRpcProvider(rpc);
-};
-
-const getFactory = () => {
-  const provider = getProvider();
-  return new ethers.Contract(polygonConfig.factoryAddress, FACTORY_ABI, provider);
-};
-
-const computeTvl = async (composition: any[]): Promise<number> => {
-  let total = 0;
-  for (const item of composition) {
-    try {
-      const balance = BigInt(item.balance.hex || item.balance._hex || item.balance);
-      const decimals = item.decimals || 18;
-      const balanceFormatted = Number(formatUnits(balance, decimals));
-      const price = 1; // Stub - replace with actual price fetching
-      total += balanceFormatted * price;
-    } catch (e) {
-      continue;
-    }
-  }
-  return total;
 };
 
 export async function GET(
@@ -50,39 +25,50 @@ export async function GET(
   try {
     const userAddress = params.address;
     const provider = getProvider();
-    const factory = getFactory();
+    const factory = new ethers.Contract(polygonConfig.factoryAddress, FACTORY_ABI, provider);
     const pools: string[] = await factory.getDeployedFunds();
     const dhedge = new Dhedge(provider, Network.POLYGON);
 
     const deposits = await Promise.all(
-      pools.map(async (poolAddress) => {
+      pools.map(async (poolAddr) => {
         try {
-          const pool = await dhedge.loadPool(poolAddress);
-          const contract = new ethers.Contract(poolAddress, ERC20_ABI, provider);
-          const balance = await contract.balanceOf(userAddress);
-          
+          const erc20 = new ethers.Contract(poolAddr, ERC20_ABI, provider);
+          const balance = await erc20.balanceOf(userAddress);
           if (balance.eq(0)) return null;
 
-          const [name, symbol, decimals, totalSupply] = await Promise.all([
-            contract.name(),
-            contract.symbol(),
-            contract.decimals(),
-            contract.totalSupply(),
+          const [name, symbol, totalSupply] = await Promise.all([
+            erc20.name(),
+            erc20.symbol(),
+            erc20.totalSupply(),
           ]);
 
+          // Basic TVL via composition with stub price=1
+          const pool = await dhedge.loadPool(poolAddr);
           const composition = await pool.getComposition();
-          const tvl = await computeTvl(composition);
-          const sharePrice = totalSupply.gt(0) ? tvl / Number(ethers.utils.formatEther(totalSupply)) : 1;
+          let tvl = 0;
+          for (const item of composition) {
+            try {
+              const bal = BigInt((item as any).balance?._hex || (item as any).balance?.hex || item.balance);
+              const decimals = (item as any).decimals || 18;
+              const balFmt = Number(ethers.utils.formatUnits(bal, decimals));
+              tvl += balFmt; // price stub 1
+            } catch (e) {
+              continue;
+            }
+          }
+          const sharePrice = totalSupply.gt(0)
+            ? tvl / Number(ethers.utils.formatEther(totalSupply))
+            : 1;
           const value = Number(ethers.utils.formatEther(balance)) * sharePrice;
 
           return {
-            pool: poolAddress,
+            pool: poolAddr,
             name,
             symbol,
             balance: ethers.utils.formatEther(balance),
             sharePrice,
             value,
-            pnl: 0, // Stub: would need cost basis
+            pnl: 0,
           };
         } catch {
           return null;

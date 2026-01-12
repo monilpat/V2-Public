@@ -32,7 +32,7 @@ const computeTvl = async (composition: any[]): Promise<number> => {
 };
 
 // Helper to get share price
-const getSharePrice = async (poolAddress: string, composition: any[]): Promise<number> => {
+const getSharePrice = async (poolAddress: string, composition: any[], provider: ethers.providers.JsonRpcProvider): Promise<number> => {
   try {
     const contract = new ethers.Contract(poolAddress, erc20, provider);
     const totalSupply = await contract.totalSupply();
@@ -114,10 +114,11 @@ poolsRouter.get("/pool/:address/metrics", async (req: Request, res: Response) =>
   try {
     const network = resolveNetwork(req.query.network as string | undefined);
     const poolAddress = req.params.address;
+    const provider = getProvider(network);
     const pool = await dhedge(network).loadPool(poolAddress);
     const composition = await pool.getComposition();
     const tvl = await computeTvl(composition);
-    const sharePrice = await getSharePrice(poolAddress, composition);
+    const sharePrice = await getSharePrice(poolAddress, composition, provider);
 
     // Get history from cache or generate stub
     const history = sharePriceCache.get(poolAddress) || [];
@@ -187,8 +188,9 @@ poolsRouter.get("/pool/:address/history", async (req: Request, res: Response) =>
     const network = resolveNetwork(req.query.network as string | undefined);
     const pool = await dhedge(network).loadPool(poolAddress);
     const composition = await pool.getComposition();
+    const provider = getProvider(network);
     const tvl = await computeTvl(composition);
-    const sharePrice = await getSharePrice(poolAddress, composition);
+    const sharePrice = await getSharePrice(poolAddress, composition, provider);
 
     // Get or generate history
     let history = sharePriceCache.get(poolAddress) || [];

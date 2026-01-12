@@ -10,3 +10,5 @@ if (!rawApiBase || rawApiBase.includes('vercel.app') || rawApiBase === 'v2-publi
   // Use external API server
   API_BASE = rawApiBase.endsWith('/') ? rawApiBase.slice(0, -1) : rawApiBase;
 }
+
+export { API_BASE };

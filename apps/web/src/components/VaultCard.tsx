@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { RiskScoreBadge } from "./RiskScoreBadge";
 import { formatReturns } from "@/lib/returns";
+import { chainName } from "@/lib/chains";
 
 export type VaultCardProps = {
   pool: {
@@ -13,6 +14,7 @@ export type VaultCardProps = {
     returns1w?: number;
     returns1m?: number;
     riskScore?: number;
+    network?: number;
   };
 };
 
@@ -25,7 +27,12 @@ export function VaultCard({ pool }: VaultCardProps) {
             <div className="text-sm text-muted">Vault</div>
             <div className="text-xl font-semibold">{pool.name}</div>
           </div>
-          <span className="px-3 py-1 rounded-full bg-white/5 text-sm">{pool.symbol}</span>
+          <div className="flex gap-2">
+            <span className="px-3 py-1 rounded-full bg-white/5 text-sm">{pool.symbol}</span>
+            <span className="px-3 py-1 rounded-full bg-white/10 text-xs">
+              {chainName(pool.network || 137)}
+            </span>
+          </div>
         </div>
 
         {pool.tvl !== undefined && (
