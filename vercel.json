@@ -1,8 +1,7 @@
 {
   "framework": "nextjs",
-  "rootDirectory": "apps/web",
-  "installCommand": "pnpm install",
-  "buildCommand": "pnpm build",
-  "outputDirectory": ".next",
+  "installCommand": "cd apps/web && pnpm install",
+  "buildCommand": "cd apps/web && pnpm build",
+  "outputDirectory": "apps/web/.next",
   "rewrites": [{ "source": "/api/:path*", "destination": "http://localhost:8000/:path*" }]
 }
