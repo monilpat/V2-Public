@@ -18,7 +18,7 @@ export type VaultCardProps = {
 
 export function VaultCard({ pool }: VaultCardProps) {
   return (
-    <Link href={`/(pool)/${pool.address}`} className="block">
+    <Link href={`/pool/${pool.address}`} className="block">
       <div className="card p-5 space-y-3 hover:bg-white/5 transition-colors">
         <div className="flex items-center justify-between">
           <div>

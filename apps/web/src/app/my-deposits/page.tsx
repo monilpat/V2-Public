@@ -66,7 +66,7 @@ export default function MyDepositsPage() {
                 <tr key={deposit.pool}>
                   <td className="py-3">
                     <Link
-                      href={`/(pool)/${deposit.pool}`}
+                      href={`/pool/${deposit.pool}`}
                       className="font-semibold hover:text-accent2"
                     >
                       {deposit.name} ({deposit.symbol})
@@ -82,13 +82,13 @@ export default function MyDepositsPage() {
                   <td className="py-3">
                     <div className="flex gap-2">
                       <Link
-                        href={`/(pool)/${deposit.pool}?action=deposit`}
+                        href={`/pool/${deposit.pool}?action=deposit`}
                         className="text-xs btn-ghost px-2 py-1"
                       >
                         Deposit
                       </Link>
                       <Link
-                        href={`/(pool)/${deposit.pool}?action=withdraw`}
+                        href={`/pool/${deposit.pool}?action=withdraw`}
                         className="text-xs btn-ghost px-2 py-1"
                       >
                         Withdraw

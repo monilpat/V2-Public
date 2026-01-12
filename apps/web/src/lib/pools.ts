@@ -15,7 +15,8 @@ export type PoolMeta = {
 
 export const fetchPools = async (): Promise<PoolMeta[]> => {
   try {
-    const res = await axios.get(`${API_BASE}/pools`);
+    const baseUrl = API_BASE.endsWith('/') ? API_BASE.slice(0, -1) : API_BASE;
+    const res = await axios.get(`${baseUrl}/pools`);
     if (res.data?.pools?.length) return res.data.pools;
   } catch (e) {
     // fallback below

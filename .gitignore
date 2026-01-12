@@ -24,3 +24,5 @@ coverage.json
 #Foundry
 cache_forge
 out
+.vercel
+.env*.local
