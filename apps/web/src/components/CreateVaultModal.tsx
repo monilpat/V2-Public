@@ -72,8 +72,8 @@ export function CreateVaultModal({
   }, []);
 
   const handleAssetsChange = useCallback((addresses: string[]) => {
-    setSelectedAssets(addresses);
-  }, []);
+    setSelectedAssets(addresses.slice(0, networkConfig?.maxSupportedAssets || 12));
+  }, [networkConfig]);
 
   const handleNext = () => {
     if (currentStep === 1) {
@@ -88,6 +88,10 @@ export function CreateVaultModal({
       // Validate step 2
       if (selectedAssets.length === 0) {
         setError("Please select at least one asset");
+        return;
+      }
+      if (selectedAssets.length > (networkConfig?.maxSupportedAssets || 12)) {
+        setError(`Max ${networkConfig?.maxSupportedAssets || 12} assets allowed`);
         return;
       }
       setError(null);
@@ -116,10 +120,27 @@ export function CreateVaultModal({
       const perfFeeBps = Math.round(vaultInfo.performanceFee * 100);
       const mgmtFeeBps = Math.round(vaultInfo.managementFee * 100);
 
-      const assets = selectedAssets.map((addr) => ({
-        asset: addr as `0x${string}`,
-        isDeposit: true,
-      }));
+      if (selectedAssets.length === 0) {
+        setError("Select at least one asset");
+        return;
+      }
+      if (selectedAssets.length > networkConfig.maxSupportedAssets) {
+        setError(`Max ${networkConfig.maxSupportedAssets} assets`);
+        return;
+      }
+
+      const assets = selectedAssets.map((addr) => {
+        const meta = networkConfig.assets.find((a) => a.address === addr);
+        return {
+          asset: addr as `0x${string}`,
+          isDeposit: meta?.isDeposit ?? false,
+        };
+      });
+
+      if (!assets.some((a) => a.isDeposit)) {
+        setError("At least one deposit-enabled asset is required");
+        return;
+      }
 
       const txHash = await writeContractAsync({
         address: networkConfig.factoryAddress as `0x${string}`,
