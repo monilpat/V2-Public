@@ -25,3 +25,10 @@ For the documentation, visit [dHEDGE Docs](https://docs.dhedge.org).
 ## Repository Guide 📖
 
 📚 All the technical documentation is in the `./readmes/` directory.
+
+## Frontend + API (Polygon)
+
+- API: `cd services/api && pnpm install && pnpm start:watch` (env from `.env.example`).
+- Web: `cd apps/web && pnpm install && pnpm dev` (env from `.env.example`).
+- API defaults to Polygon; override with `ENABLE_NETWORK_OVERRIDE=true` to pass `?network=`.
+- Web config and seed pools live in `config/polygon.ts`.
