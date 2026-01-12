@@ -1,6 +1,6 @@
 "use client";
 import { useAccount, useDisconnect } from "wagmi";
-import { ConnectButton } from "@reown/appkit/react";
+import { AppKitConnectButton } from "@reown/appkit/react";
 
 export function Wallet() {
   const { address } = useAccount();
@@ -16,5 +16,5 @@ export function Wallet() {
     );
   }
 
-  return <ConnectButton label="Connect Wallet" />;
+  return <AppKitConnectButton label="Connect Wallet" />;
 }
