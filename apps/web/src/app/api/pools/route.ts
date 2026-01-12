@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { ethers } from "ethers";
 import { getDhedgeReadOnly, getProvider } from "@/lib/dhedge-readonly";
 import { polygonConfig } from "@/config/polygon";
+import { fetchPriceUSD } from "@/lib/prices";
 
 // Simple ERC20 ABI for name/symbol
 const ERC20_ABI = [
@@ -31,14 +32,13 @@ const computeTvl = async (composition: any[]): Promise<number> => {
   
   for (const item of composition) {
     try {
-      const balance = BigInt(item.balance.hex || item.balance._hex || item.balance);
-      const decimals = item.decimals || 18;
+      // Handle BigNumber from ethers - it has _hex property, not hex
+      const balanceValue = (item.balance as any)?._hex || (item.balance as any)?.hex || item.balance;
+      const balance = BigInt(balanceValue);
+      const decimals = (item as any).decimals || 18;
       const balanceFormatted = Number(ethers.utils.formatUnits(balance, decimals));
-      
-      // Simple price fetch (you can enhance this with your price API)
-      // For now, using a stub - you'd want to use your price fetching logic
-      const price = 1; // Stub - replace with actual price fetching
-      total += balanceFormatted * price;
+      const price = await fetchPriceUSD(item.asset);
+      total += balanceFormatted * (price || 0);
     } catch (e) {
       continue;
     }

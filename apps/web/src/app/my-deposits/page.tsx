@@ -9,7 +9,7 @@ import { formatReturns } from "@/lib/returns";
 import { NetworkSelector } from "@/components/network-selector";
 
 export default function MyDepositsPage() {
-  const [network, setNetwork] = useState("polygon");
+  const [network, setNetwork] = useState("137"); // Polygon chain ID
   const { address, isConnected } = useAccount();
   const { data: deposits, isLoading } = useQuery({
     queryKey: ["userDeposits", address, network],

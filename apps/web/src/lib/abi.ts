@@ -61,3 +61,30 @@ export const erc20Abi = [
     "type": "function"
   },
 ] as const;
+
+export const poolFactoryAbi = [
+  {
+    "inputs": [
+      { "internalType": "bool", "name": "_privatePool", "type": "bool" },
+      { "internalType": "address", "name": "_manager", "type": "address" },
+      { "internalType": "string", "name": "_managerName", "type": "string" },
+      { "internalType": "string", "name": "_fundName", "type": "string" },
+      { "internalType": "string", "name": "_fundSymbol", "type": "string" },
+      { "internalType": "uint256", "name": "_performanceFeeNumerator", "type": "uint256" },
+      { "internalType": "uint256", "name": "_managerFeeNumerator", "type": "uint256" },
+      {
+        "components": [
+          { "internalType": "address", "name": "asset", "type": "address" },
+          { "internalType": "bool", "name": "isDeposit", "type": "bool" }
+        ],
+        "internalType": "struct IHasSupportedAsset.Asset[]",
+        "name": "_supportedAssets",
+        "type": "tuple[]"
+      }
+    ],
+    "name": "createFund",
+    "outputs": [{ "internalType": "address", "name": "fund", "type": "address" }],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+] as const;

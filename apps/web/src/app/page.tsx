@@ -4,10 +4,10 @@ import axios from "axios";
 import { API_BASE } from "@/lib/config";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { trade as tradeApi, approveTrade, createPool } from "@/lib/api";
+import { trade as tradeApi, approveTrade } from "@/lib/api";
 import { assetMeta, fetchPriceUSD } from "@/lib/prices";
 import { useWriteContract, useReadContract, useAccount, useConnect, useDisconnect } from "wagmi";
-import { poolLogicAbi, poolManagerLogicAbi, erc20Abi } from "@/lib/abi";
+import { poolLogicAbi, poolManagerLogicAbi, erc20Abi, poolFactoryAbi } from "@/lib/abi";
 import { formatUnits, parseUnits, maxUint256 } from "viem";
 import Link from "next/link";
 import { Nav } from "@/components/nav";
@@ -326,7 +326,7 @@ function Wallet() {
 }
 
 export default function Page() {
-  const [network, setNetwork] = useState("polygon");
+  const [network, setNetwork] = useState("137"); // Polygon chain ID
 
   const { data: poolAddresses } = useQuery({
     queryKey: ["pools", network],
@@ -344,6 +344,8 @@ export default function Page() {
   const [fee, setFee] = useState("0");
   const [supportedAssets, setSupportedAssets] = useState<string[]>([]);
   const [createStatus, setCreateStatus] = useState<string | null>(null);
+  const { writeContractAsync: writeFactory } = useWriteContract();
+  const { address } = useAccount();
 
   return (
     <div className="space-y-8">
@@ -419,17 +421,33 @@ export default function Page() {
                 setCreateStatus("Fill all fields");
                 return;
               }
+              if (!address) {
+                setCreateStatus("Connect wallet first");
+                return;
+              }
               try {
-                setCreateStatus("Creating pool...");
-                const assets = supportedAssets.map((a) => [a, true]);
-                const res = await createPool({
-                  managerName,
-                  poolName,
-                  symbol,
-                  supportedAssets: assets,
-                  fee: feeNum,
+                setCreateStatus("Signing createFund...");
+                const assets = supportedAssets.map((a) => ({
+                  asset: a as `0x${string}`,
+                  isDeposit: true,
+                }));
+                const txHash = await writeFactory({
+                  address: polygonConfig.factoryAddress as `0x${string}`,
+                  abi: poolFactoryAbi,
+                  functionName: "createFund",
+                  args: [
+                    false, // public pool
+                    address,
+                    managerName,
+                    poolName,
+                    symbol,
+                    BigInt(feeNum),
+                    0n, // manager fee numerator
+                    assets,
+                  ],
+                  chainId: 137,
                 });
-                setCreateStatus(`Pool deployed: ${res.data.msg}`);
+                setCreateStatus(`Tx sent: ${txHash}`);
               } catch (err: any) {
                 setCreateStatus(err?.message || "Error");
               }

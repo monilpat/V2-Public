@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { ethers } from "ethers";
 import { getDhedgeReadOnly, getProvider } from "@/lib/dhedge-readonly";
 import { formatUnits } from "ethers/lib/utils";
+import { fetchPriceUSD } from "@/lib/prices";
 
 const ERC20_ABI = [
   "function totalSupply() view returns (uint256)",
@@ -22,12 +23,13 @@ const computeTvl = async (composition: any[]): Promise<number> => {
   let total = 0;
   for (const item of composition) {
     try {
-      const balance = BigInt(item.balance.hex || item.balance._hex || item.balance);
-      const decimals = item.decimals || 18;
+      // Handle BigNumber from ethers - it has _hex property, not hex
+      const balanceValue = (item.balance as any)?._hex || (item.balance as any)?.hex || item.balance;
+      const balance = BigInt(balanceValue);
+      const decimals = (item as any).decimals || 18;
       const balanceFormatted = Number(formatUnits(balance, decimals));
-      // Stub price - replace with actual price fetching
-      const price = 1;
-      total += balanceFormatted * price;
+      const price = await fetchPriceUSD(item.asset);
+      total += balanceFormatted * (price || 0);
     } catch (e) {
       continue;
     }

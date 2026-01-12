@@ -14,7 +14,7 @@ export function NetworkSelector({ value, onChange, disabledIds = [] }: Props) {
       onChange={(e) => onChange(e.target.value)}
     >
       {supportedChains.map((chain) => (
-        <option key={chain.id} value={chain.network} disabled={disabledIds.includes(chain.id)}>
+        <option key={chain.id} value={chain.id.toString()} disabled={disabledIds.includes(chain.id)}>
           {chain.name}
         </option>
       ))}

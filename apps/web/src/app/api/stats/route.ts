@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { ethers } from "ethers";
 import { getDhedgeReadOnly, getProvider } from "@/lib/dhedge-readonly";
 import { polygonConfig } from "@/config/polygon";
+import { fetchPriceUSD } from "@/lib/prices";
 
 const FACTORY_ABI = [
   "function getDeployedFunds() view returns (address[])",
@@ -31,10 +32,13 @@ export async function GET(request: NextRequest) {
         let tvl = 0;
         for (const item of composition) {
           try {
-            const balance = BigInt(item.balance.hex || item.balance._hex || item.balance);
-            const decimals = item.decimals || 18;
+            // Handle BigNumber from ethers - it has _hex property, not hex
+            const balanceValue = (item.balance as any)?._hex || (item.balance as any)?.hex || item.balance;
+            const balance = BigInt(balanceValue);
+            const decimals = (item as any).decimals || 18;
             const balanceFormatted = Number(ethers.utils.formatUnits(balance, decimals));
-            tvl += balanceFormatted; // Stub: using 1:1 price
+            const price = await fetchPriceUSD(item.asset);
+            tvl += balanceFormatted * (price || 0);
           } catch (e) {
             continue;
           }
