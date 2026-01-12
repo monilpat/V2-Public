@@ -50,9 +50,19 @@ export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
     const search = searchParams.get("search");
+    const network = searchParams.get("network");
+    
+    // For now, only support Polygon (137). Network parameter is accepted but ignored.
+    // This allows the frontend to pass it without errors.
+    if (network && network !== "137" && network !== "polygon") {
+      return NextResponse.json(
+        { status: "fail", msg: "Only Polygon network (137) is currently supported" },
+        { status: 400 }
+      );
+    }
     
     const factory = getFactory();
-    const pools: string[] = await factory.getDeployedFunds();
+    const pools: string[] = await factory.getDeployedFunds().catch(() => []);
     
     const provider = getProvider();
     const dhedge = getDhedgeReadOnly();
@@ -67,15 +77,42 @@ export async function GET(request: NextRequest) {
           const composition = await pool.getComposition();
           const tvl = await computeTvl(composition);
           
+          // Fetch metrics for returns and risk score
+          let returns24h = 0;
+          let returns1w = 0;
+          let returns1m = 0;
+          let riskScore = 50;
+          let score = 0;
+          
+          try {
+            const metricsRes = await axios.get(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'}/api/pool/${addr}/metrics`).catch(() => null);
+            if (metricsRes?.data?.status === "success" && metricsRes.data.metrics) {
+              returns24h = metricsRes.data.metrics.returns24h || 0;
+              returns1w = metricsRes.data.metrics.returns1w || 0;
+              returns1m = metricsRes.data.metrics.returns1m || 0;
+              riskScore = metricsRes.data.metrics.riskScore || 50;
+              // Calculate score: combination of TVL, returns, and risk
+              score = Math.round(
+                (tvl / 1000) * 0.3 + // TVL component (normalized)
+                (returns1m || 0) * 10 * 0.5 + // Returns component
+                (100 - riskScore) * 0.2 // Risk component (lower risk = higher score)
+              );
+            }
+          } catch (e) {
+            // Use defaults if metrics fetch fails
+          }
+
           return {
             address: addr,
             name,
             symbol,
             tvl,
-            returns24h: 0,
-            returns1w: 0,
-            returns1m: 0,
-            riskScore: Math.floor(Math.random() * 100),
+            returns24h,
+            returns1w,
+            returns1m,
+            riskScore,
+            score,
+            network: 137,
           };
         } catch (_) {
           return {
@@ -104,10 +141,20 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({ status: "success", pools: filtered });
+    return NextResponse.json({ 
+      status: "success", 
+      pools: filtered,
+      network: 137, // Always Polygon for now
+    });
   } catch (err: any) {
+    // Log error for debugging but return a safe response
+    console.error("Error fetching pools:", err);
     return NextResponse.json(
-      { status: "fail", msg: err?.message || err },
+      { 
+        status: "fail", 
+        msg: err?.message || "Failed to fetch pools",
+        pools: [], // Return empty array on error
+      },
       { status: 400 }
     );
   }

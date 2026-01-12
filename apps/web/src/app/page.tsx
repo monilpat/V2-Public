@@ -443,12 +443,6 @@ export default function Page() {
                 setCreateStatus("Management fee exceeds cap (3%)");
                 return;
               }
-              const entryNum = Number(entryFee || "0");
-              const exitNum = Number(exitFee || "0");
-              if (entryNum > 100 || exitNum > 100) {
-                setCreateStatus("Entry/exit fee exceeds cap (1%)");
-                return;
-              }
               if (!managerName || !poolName || !symbol || supportedAssets.length === 0) {
                 setCreateStatus("Fill all fields");
                 return;
