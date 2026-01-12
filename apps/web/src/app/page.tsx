@@ -385,7 +385,7 @@ export default function Page() {
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {pools.map((pool) => (
-          <Link key={pool.address} href={`/(pool)/${pool.address}`} className="block">
+          <Link key={pool.address} href={`/pool/${pool.address}`} className="block">
             <PoolCard pool={pool} />
           </Link>
         ))}
