@@ -150,7 +150,7 @@ function PoolCard({ pool }: { pool: { name: string; address: string; symbol: str
                   try {
                     setStatus("Approving...");
                     await approveDeposit(pool.address, depositAsset);
-                    setStatus("Depositing...");
+                    clear(); setStatus("Depositing...");
                     const tx = await deposit(pool.address, depositAsset, depositAmount);
                     setStatus(`Tx: ${tx.data.msg || "sent"}`);
                   } catch (err: any) {
