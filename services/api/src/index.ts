@@ -5,6 +5,7 @@ import tradeRouter from "./requests/trade"
 import dotenv from "dotenv"
 import { errorHandler } from "./middleware/error"
 import poolsRouter from "./requests/pools"
+import statsRouter from "./requests/stats"
 
 dotenv.config()
 
@@ -17,6 +18,7 @@ app.use(adminRouter)
 app.use(investRouter)
 app.use(tradeRouter)
 app.use(poolsRouter)
+app.use(statsRouter)
 app.use(errorHandler)
 if (require.main === module) {
   app.listen(PORT, () => {
