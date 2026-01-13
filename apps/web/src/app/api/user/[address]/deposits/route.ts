@@ -4,6 +4,10 @@ import { getDhedgeReadOnly, getProvider } from "@/lib/dhedge-readonly";
 import { polygonConfig } from "@/config/polygon";
 import { fetchPriceUSD } from "@/lib/prices";
 
+// Force dynamic to ensure Vercel recognizes this as a dynamic route
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 const ERC20_ABI = [
   "function name() view returns (string)",
   "function symbol() view returns (string)",
@@ -116,10 +120,53 @@ export async function GET(
 ) {
   try {
     const userAddress = params.address;
-    const provider = getProvider();
+    
+    // Validate address format
+    if (!userAddress || !ethers.utils.isAddress(userAddress)) {
+      return NextResponse.json({
+        status: "fail",
+        msg: "Invalid address format",
+        deposits: [],
+      });
+    }
+
+    let provider;
+    try {
+      provider = getProvider();
+    } catch (e: any) {
+      console.error("Failed to get provider:", e?.message);
+      return NextResponse.json({
+        status: "partial",
+        deposits: [],
+        error: "Failed to connect to blockchain",
+      });
+    }
+
     const factory = new ethers.Contract(polygonConfig.factoryAddress, FACTORY_ABI, provider);
-    const pools: string[] = await factory.getDeployedFunds();
-    const dhedge = getDhedgeReadOnly();
+    
+    let pools: string[] = [];
+    try {
+      pools = await factory.getDeployedFunds();
+    } catch (e: any) {
+      console.error("Failed to get deployed funds:", e?.message);
+      return NextResponse.json({
+        status: "partial",
+        deposits: [],
+        error: "Failed to fetch pool data",
+      });
+    }
+
+    let dhedge;
+    try {
+      dhedge = getDhedgeReadOnly();
+    } catch (e: any) {
+      console.error("Failed to initialize dHEDGE SDK:", e?.message);
+      return NextResponse.json({
+        status: "partial",
+        deposits: [],
+        error: "Failed to initialize SDK",
+      });
+    }
 
     const deposits = await Promise.all(
       pools.map(async (poolAddr) => {
@@ -190,9 +237,12 @@ export async function GET(
       deposits: deposits.filter((d) => d !== null),
     });
   } catch (err: any) {
-    return NextResponse.json(
-      { status: "fail", msg: err?.message || err },
-      { status: 400 }
-    );
+    console.error("User deposits route error:", err?.message);
+    // Return valid JSON instead of 400 error
+    return NextResponse.json({
+      status: "partial",
+      deposits: [],
+      error: err?.message || "Unknown error",
+    });
   }
 }

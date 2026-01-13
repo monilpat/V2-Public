@@ -138,26 +138,36 @@ export async function GET(request: NextRequest) {
     
     let pools: string[] = [];
     let debugInfo: Record<string, any> | undefined;
+    const provider = getProvider();
+    const latest = await provider.getBlockNumber();
+    const start = await getStartBlock(provider);
+    let logError: string | undefined;
+    let fallbackError: string | undefined;
+
     try {
-      const provider = getProvider();
-      const latest = await provider.getBlockNumber();
-      const start = await getStartBlock(provider);
       pools = await fetchPoolsFromLogs();
-      if (debug) {
-        debugInfo = {
-          rpc: process.env.NEXT_PUBLIC_POLYGON_RPC || "missing",
-          startBlock: start,
-          latestBlock: latest,
-          poolsFromLogs: pools.length,
-        };
-      }
-      if (!pools.length) {
+    } catch (e: any) {
+      logError = e?.message || "log_fetch_failed";
+    }
+
+    if (!pools.length) {
+      try {
         const factory = getFactory();
         pools = await factory.getDeployedFunds().catch(() => []);
+      } catch (e: any) {
+        fallbackError = e?.message || "factory_fallback_failed";
       }
-    } catch (_) {
-      const factory = getFactory();
-      pools = await factory.getDeployedFunds().catch(() => []);
+    }
+
+    if (debug) {
+      debugInfo = {
+        rpc: process.env.NEXT_PUBLIC_POLYGON_RPC || "missing",
+        startBlock: start,
+        latestBlock: latest,
+        poolsFromLogs: pools.length,
+        logError,
+        fallbackError,
+      };
     }
     
     const provider = getProvider();

@@ -4,6 +4,10 @@ import { getDhedgeReadOnly, getProvider } from "@/lib/dhedge-readonly";
 import { polygonConfig } from "@/config/polygon";
 import { fetchPriceUSD } from "@/lib/prices";
 
+// Force dynamic to prevent static generation issues
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 const FACTORY_ABI = [
   "function getDeployedFunds() view returns (address[])",
 ];
@@ -119,11 +123,68 @@ const getPoolFees = async (poolAddress: string): Promise<number> => {
   }
 };
 
+// Default empty stats response
+const emptyStats = {
+  totalTvl: 0,
+  vaultCount: 0,
+  managerCount: 0,
+  totalFees: 0,
+  networks: [] as Array<{
+    network: string;
+    tvl: number;
+    vaults: number;
+    managers: number;
+    fees: number;
+  }>,
+};
+
 export async function GET(request: NextRequest) {
   try {
     const factory = getFactory();
-    const pools: string[] = await factory.getDeployedFunds();
-    const dhedge = getDhedgeReadOnly();
+    
+    // Try to get deployed funds with graceful fallback
+    let pools: string[] = [];
+    try {
+      pools = await factory.getDeployedFunds();
+    } catch (e: any) {
+      console.error("Failed to fetch deployed funds:", e?.message);
+      // Return empty stats if we can't even get the pool list
+      return NextResponse.json({
+        status: "partial",
+        stats: emptyStats,
+        error: "Failed to fetch pool data from blockchain",
+      });
+    }
+    
+    // If no pools found, return early
+    if (!pools || pools.length === 0) {
+      return NextResponse.json({
+        status: "success",
+        stats: emptyStats,
+      });
+    }
+
+    let dhedge;
+    try {
+      dhedge = getDhedgeReadOnly();
+    } catch (e: any) {
+      console.error("Failed to initialize dHEDGE SDK:", e?.message);
+      return NextResponse.json({
+        status: "partial",
+        stats: {
+          ...emptyStats,
+          vaultCount: pools.length,
+          networks: [{
+            network: "Polygon",
+            tvl: 0,
+            vaults: pools.length,
+            managers: 0,
+            fees: 0,
+          }],
+        },
+        error: "Failed to initialize SDK",
+      });
+    }
 
     let totalTvl = 0;
     let totalFees = 0;
@@ -165,7 +226,7 @@ export async function GET(request: NextRequest) {
           const poolFees = await getPoolFees(poolAddr);
           totalFees += poolFees;
         } catch (e) {
-          // Skip failed pools
+          // Skip failed pools silently
         }
       }));
     }
@@ -189,9 +250,12 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (err: any) {
-    return NextResponse.json(
-      { status: "fail", msg: err?.message || err },
-      { status: 400 }
-    );
+    console.error("Stats route error:", err?.message);
+    // Return valid JSON with empty stats instead of 400 error
+    return NextResponse.json({
+      status: "partial",
+      stats: emptyStats,
+      error: err?.message || "Unknown error",
+    });
   }
 }
