@@ -2,6 +2,7 @@ export const polygonConfig = {
   chainId: 137,
   name: "Polygon",
   factoryAddress: "0xfdc7b8bFe0DD3513Cc669bB8d601Cb83e2F69cB0", // PoolFactoryProxy (Polygon prod)
+  easySwapperV2Proxy: "0x45b90480D6F643dE2f128db091A357C3c90399f2",
   maxSupportedAssets: 10,
   performanceFee: {
     maxNumerator: 5000,

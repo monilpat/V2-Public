@@ -106,6 +106,9 @@ export function BuySellPanel({
 
     try {
       if (mode === "buy") {
+        if (!polygonConfig.easySwapperV2Proxy) {
+          throw new Error("EasySwapperV2 proxy address is not configured.");
+        }
         // Step 1: Approve
         setTxStatus("approving");
         const approveHash = await writeContractAsync({
@@ -120,19 +123,26 @@ export function BuySellPanel({
         // Step 2: Deposit
         if (!depositAmount) throw new Error("Invalid deposit amount");
         setTxStatus("depositing");
-        const depositHash = await writeContractAsync({
+        const depositArgs = [
+          poolAddress as `0x${string}`,
+          selectedAsset as `0x${string}`,
+          depositAmount,
+          expectedAmountReceived,
+        ] as const;
+        const depositSim = await publicClient.simulateContract({
           address: polygonConfig.easySwapperV2Proxy as `0x${string}`,
           abi: easySwapperV2Abi,
           functionName: "deposit",
-          args: [
-            poolAddress as `0x${string}`,
-            selectedAsset as `0x${string}`,
-            depositAmount,
-            expectedAmountReceived,
-          ],
+          args: depositArgs,
+          account: address,
         });
+        const depositHash = await writeContractAsync(depositSim.request);
         setTxHash(depositHash);
-        await publicClient.waitForTransactionReceipt({ hash: depositHash });
+        const depositReceipt = await publicClient.waitForTransactionReceipt({ hash: depositHash });
+        
+        if (depositReceipt.status === "reverted") {
+          throw new Error("Deposit transaction reverted on-chain");
+        }
 
         setSuccess("Deposit successful!");
         setAmount("");
@@ -141,15 +151,22 @@ export function BuySellPanel({
         // Withdraw
         setTxStatus("withdrawing");
         const withdrawAmount = parseUnits(amount, 18); // Pool tokens are 18 decimals
-        const withdrawHash = await writeContractAsync({
+        if (!publicClient) throw new Error("Wallet client unavailable");
+        const withdrawSim = await publicClient.simulateContract({
           address: poolAddress as `0x${string}`,
           abi: poolLogicAbi,
           functionName: "withdraw",
           args: [withdrawAmount],
+          account: address,
         });
+        const withdrawHash = await writeContractAsync(withdrawSim.request);
         setTxHash(withdrawHash);
         if (!publicClient) throw new Error("Wallet client unavailable");
-        await publicClient.waitForTransactionReceipt({ hash: withdrawHash });
+        const withdrawReceipt = await publicClient.waitForTransactionReceipt({ hash: withdrawHash });
+        
+        if (withdrawReceipt.status === "reverted") {
+          throw new Error("Withdrawal transaction reverted on-chain");
+        }
 
         setSuccess("Withdrawal successful!");
         setAmount("");
