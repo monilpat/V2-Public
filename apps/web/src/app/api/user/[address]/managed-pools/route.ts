@@ -3,6 +3,7 @@ import { ethers } from "ethers";
 import { getDhedgeReadOnly, getProvider } from "@/lib/dhedge-readonly";
 import { polygonConfig } from "@/config/polygon";
 import { fetchPriceUSD } from "@/lib/prices";
+import { getHistoricalPrices, findPriceAtTimestamp } from "@/lib/historical-prices";
 
 // Force dynamic to ensure Vercel recognizes this as a dynamic route
 export const dynamic = "force-dynamic";
@@ -37,6 +38,37 @@ const computeTvl = async (composition: any[]): Promise<number> => {
     }
   }
   return total;
+};
+
+// Calculate returns for a pool
+const getPoolReturnsLight = async (
+  poolAddress: string,
+  currentSharePrice: number
+): Promise<{ returns24h: number; returns1w: number; returns1m: number }> => {
+  try {
+    const historicalPrices = await getHistoricalPrices(poolAddress, 200_000);
+
+    if (historicalPrices.length === 0) {
+      return { returns24h: 0, returns1w: 0, returns1m: 0 };
+    }
+
+    const now = Date.now();
+    const oneDayAgo = now - 24 * 60 * 60 * 1000;
+    const oneWeekAgo = now - 7 * 24 * 60 * 60 * 1000;
+    const oneMonthAgo = now - 30 * 24 * 60 * 60 * 1000;
+
+    const price24h = findPriceAtTimestamp(historicalPrices, oneDayAgo, currentSharePrice);
+    const price1w = findPriceAtTimestamp(historicalPrices, oneWeekAgo, currentSharePrice);
+    const price1m = findPriceAtTimestamp(historicalPrices, oneMonthAgo, currentSharePrice);
+
+    const returns24h = price24h > 0 ? ((currentSharePrice - price24h) / price24h) * 100 : 0;
+    const returns1w = price1w > 0 ? ((currentSharePrice - price1w) / price1w) * 100 : 0;
+    const returns1m = price1m > 0 ? ((currentSharePrice - price1m) / price1m) * 100 : 0;
+
+    return { returns24h, returns1w, returns1m };
+  } catch {
+    return { returns24h: 0, returns1w: 0, returns1m: 0 };
+  }
 };
 
 export async function GET(
@@ -134,12 +166,43 @@ export async function GET(
               ? tvl / Number(ethers.utils.formatEther(totalSupply))
               : 1;
 
+          // Get historical returns
+          const { returns24h, returns1w, returns1m } = await getPoolReturnsLight(
+            poolAddr,
+            sharePrice
+          );
+
+          // Risk score based on volatility
+          const volatility = Math.max(
+            Math.abs(returns24h),
+            Math.abs(returns1w) / 2,
+            Math.abs(returns1m) / 4
+          );
+          const riskScore = Math.round(Math.min(100, Math.max(0, volatility * 5)));
+
+          // Calculate score: combination of TVL, returns, and risk
+          const score = Math.round(
+            Math.min(
+              1000,
+              Math.max(
+                0,
+                (tvl / 1000) * 0.3 + // TVL component (normalized)
+                  (returns1m || 0) * 10 * 0.5 + // Returns component
+                  (100 - riskScore) * 0.2 // Risk component (lower risk = higher score)
+              )
+            )
+          );
+
           return {
             address: poolAddr,
             name,
             symbol,
             tvl,
-            sharePrice,
+            returns24h,
+            returns1w,
+            returns1m,
+            riskScore,
+            score,
             network: 137,
           };
         } catch (e) {
@@ -149,7 +212,11 @@ export async function GET(
             name: poolAddr,
             symbol: "POOL",
             tvl: 0,
-            sharePrice: 1,
+            returns24h: 0,
+            returns1w: 0,
+            returns1m: 0,
+            riskScore: 50,
+            score: 0,
             network: 137,
           };
         }
