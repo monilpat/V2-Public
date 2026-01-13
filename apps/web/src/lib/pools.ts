@@ -15,10 +15,17 @@ export type PoolMeta = {
   score?: number;
 };
 
-export const fetchPools = async (network?: string): Promise<PoolMeta[]> => {
+export const fetchPools = async (
+  network?: string,
+  options?: { limit?: number; offset?: number }
+): Promise<PoolMeta[]> => {
   try {
     const baseUrl = API_BASE.endsWith('/') ? API_BASE.slice(0, -1) : API_BASE;
+    const params: Record<string, number | string> = {};
+    if (options?.limit !== undefined) params.limit = options.limit;
+    if (options?.offset !== undefined) params.offset = options.offset;
     const res = await axios.get(`${baseUrl}/pools`, { 
+      params,
       timeout: 60000, // 10 second timeout
     });
     if (res.data?.status === "success" && res.data?.pools?.length) {

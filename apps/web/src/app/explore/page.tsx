@@ -18,10 +18,12 @@ export default function ExplorePage() {
   const [chain, setChain] = useState("137");
   const [sortBy, setSortBy] = useState<SortOption>("score");
   const [networkFilter, setNetworkFilter] = useState<NetworkFilter>("all");
+  const [page, setPage] = useState(0);
+  const pageSize = 10;
 
   const { data: pools, isLoading } = useQuery({
-    queryKey: ["pools", chain],
-    queryFn: () => fetchPools(chain),
+    queryKey: ["pools", chain, page, pageSize],
+    queryFn: () => fetchPools(chain, { limit: pageSize, offset: page * pageSize }),
   });
 
   const filteredAndSortedPools = useMemo(() => {
@@ -308,6 +310,23 @@ export default function ExplorePage() {
                   })}
                 </tbody>
               </table>
+            </div>
+            <div className="flex items-center justify-between px-4 py-3 border-t border-white/5">
+              <button
+                onClick={() => setPage((p) => Math.max(0, p - 1))}
+                disabled={page === 0}
+                className="px-3 py-1 rounded-lg text-sm bg-white/5 disabled:opacity-50"
+              >
+                Prev
+              </button>
+              <div className="text-xs text-muted">Page {page + 1}</div>
+              <button
+                onClick={() => setPage((p) => p + 1)}
+                disabled={filteredAndSortedPools.length < pageSize}
+                className="px-3 py-1 rounded-lg text-sm bg-white/5 disabled:opacity-50"
+              >
+                Next
+              </button>
             </div>
           </div>
         ) : (

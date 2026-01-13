@@ -71,7 +71,7 @@ function StatDisplay({ value, label }: { value: string; label: string }) {
 export default function Page() {
   const { data: pools } = useQuery({
     queryKey: ["pools", "all"],
-    queryFn: () => fetchPools("137"),
+    queryFn: () => fetchPools("137", { limit: 20, offset: 0 }),
   });
 
   // Get top vaults by TVL
