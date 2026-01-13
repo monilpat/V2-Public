@@ -96,13 +96,13 @@ export default function PoolPage() {
 
   const { data: depositsData, isLoading: depositsLoading } = useQuery({
     queryKey: ["poolDepositsHistory", poolAddress],
-    queryFn: () => fetchPoolDeposits(poolAddress, 10),
+    queryFn: () => fetchPoolDeposits(poolAddress),
     enabled: activeTab === "deposits",
   });
 
   const { data: withdrawalsData, isLoading: withdrawalsLoading } = useQuery({
     queryKey: ["poolWithdrawalsHistory", poolAddress],
-    queryFn: () => fetchPoolWithdrawals(poolAddress, 10),
+    queryFn: () => fetchPoolWithdrawals(poolAddress),
     enabled: activeTab === "withdrawals",
   });
 
@@ -333,9 +333,12 @@ export default function PoolPage() {
   };
 
   return (
-    <div className="space-y-8">
-      <Nav />
-      <div className="flex items-center justify-between">
+    <div className="min-h-screen">
+      <div className="max-w-7xl mx-auto px-4 py-6">
+        <Nav />
+      </div>
+      <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
+        <div className="flex items-center justify-between">
         <div>
           <div className="text-sm text-muted">Polygon Mainnet</div>
           <h1 className="text-3xl font-bold">{poolName}</h1>
@@ -582,6 +585,7 @@ export default function PoolPage() {
             </div>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

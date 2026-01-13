@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useAccount, useBalance } from "wagmi";
 import { formatUnits } from "viem";
 
@@ -8,6 +9,14 @@ interface YourShareCardProps {
   poolSymbol?: string;
   poolName?: string;
   sharePrice?: number;
+}
+
+declare global {
+  interface Window {
+    ethereum?: {
+      request: (args: { method: string; params?: unknown }) => Promise<unknown>;
+    };
+  }
 }
 
 export function YourShareCard({ 
@@ -28,17 +37,22 @@ export function YourShareCard({
     return null;
   }
 
+  const [addStatus, setAddStatus] = useState<"idle" | "adding" | "success" | "error">("idle");
+  
   const balanceFormatted = balance 
     ? parseFloat(formatUnits(balance.value, balance.decimals))
     : 0;
   const valueUsd = balanceFormatted * sharePrice;
 
   const handleAddToWallet = async () => {
-    const ethereum = (window as any).ethereum;
-    if (!ethereum) return;
+    if (!window.ethereum) {
+      alert("No wallet detected. Please install MetaMask or another Web3 wallet.");
+      return;
+    }
     
+    setAddStatus("adding");
     try {
-      await ethereum.request({
+      const wasAdded = await window.ethereum.request({
         method: "wallet_watchAsset",
         params: {
           type: "ERC20",
@@ -49,8 +63,17 @@ export function YourShareCard({
           },
         },
       });
+      
+      if (wasAdded) {
+        setAddStatus("success");
+        setTimeout(() => setAddStatus("idle"), 2000);
+      } else {
+        setAddStatus("idle");
+      }
     } catch (error) {
       console.error("Failed to add token to wallet:", error);
+      setAddStatus("error");
+      setTimeout(() => setAddStatus("idle"), 2000);
     }
   };
 
@@ -99,12 +122,45 @@ export function YourShareCard({
           {/* Add to Wallet Button */}
           <button
             onClick={handleAddToWallet}
-            className="w-full py-2 px-4 rounded-lg border border-white/10 text-sm font-medium hover:bg-white/5 transition-colors flex items-center justify-center gap-2"
+            disabled={addStatus === "adding"}
+            className={`w-full py-2 px-4 rounded-lg border text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
+              addStatus === "success" 
+                ? "border-green-500/50 text-green-400 bg-green-500/10" 
+                : addStatus === "error"
+                  ? "border-red-500/50 text-red-400 bg-red-500/10"
+                  : "border-white/10 hover:bg-white/5"
+            }`}
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
-            Add to Wallet
+            {addStatus === "adding" ? (
+              <>
+                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Adding...
+              </>
+            ) : addStatus === "success" ? (
+              <>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                Added!
+              </>
+            ) : addStatus === "error" ? (
+              <>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                Failed
+              </>
+            ) : (
+              <>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                Add to Wallet
+              </>
+            )}
           </button>
         </div>
       ) : (
