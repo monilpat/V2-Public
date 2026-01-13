@@ -141,13 +141,14 @@ const emptyStats = {
 export async function GET(request: NextRequest) {
   try {
     const factory = getFactory();
-    
     // Try to get deployed funds with graceful fallback
     let pools: string[] = [];
     try {
       pools = await factory.getDeployedFunds();
+      console.log("pools", pools);
     } catch (e: any) {
       console.error("Failed to fetch deployed funds:", e?.message);
+      console.log("e", e);
       // Return empty stats if we can't even get the pool list
       return NextResponse.json({
         status: "partial",
@@ -167,6 +168,7 @@ export async function GET(request: NextRequest) {
     let dhedge;
     try {
       dhedge = getDhedgeReadOnly();
+      console.log("dhedge", dhedge);
     } catch (e: any) {
       console.error("Failed to initialize dHEDGE SDK:", e?.message);
       return NextResponse.json({
@@ -194,7 +196,7 @@ export async function GET(request: NextRequest) {
     const batchSize = 10;
     for (let i = 0; i < pools.length; i += batchSize) {
       const batch = pools.slice(i, i + batchSize);
-      
+      console.log("batch", batch);
       await Promise.all(batch.map(async (poolAddr) => {
         try {
           // Get manager address and add to set
@@ -202,14 +204,16 @@ export async function GET(request: NextRequest) {
           if (manager) {
             managerSet.add(manager);
           }
-
+          console.log("poolAddr", poolAddr);
           // Calculate TVL
           const pool = await dhedge.loadPool(poolAddr);
           const composition = await pool.getComposition();
-          
+          console.log("pool", pool);
+          console.log("composition", composition);
           let tvl = 0;
           for (const item of composition) {
             try {
+              console.log("item", item);
               const balanceValue = (item.balance as any)?._hex || (item.balance as any)?.hex || item.balance;
               const balance = BigInt(balanceValue);
               const decimals = (item as any).decimals || 18;
@@ -224,6 +228,7 @@ export async function GET(request: NextRequest) {
           
           // Get fees for this pool
           const poolFees = await getPoolFees(poolAddr);
+          console.log("poolFees", poolFees);
           totalFees += poolFees;
         } catch (e) {
           // Skip failed pools silently

@@ -1,3 +1,5 @@
+export const runtime = "nodejs";
+
 import { NextRequest, NextResponse } from "next/server";
 import { ethers } from "ethers";
 import { getDhedgeReadOnly, getProvider } from "@/lib/dhedge-readonly";
