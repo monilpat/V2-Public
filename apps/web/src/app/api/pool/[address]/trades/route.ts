@@ -1,15 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ethers } from "ethers";
-import { Dhedge, Network } from "@dhedge/v2-sdk";
+import { getProvider } from "@/lib/dhedge-readonly";
 
-const ERC20_ABI = [
-  "event Transfer(address indexed from, address indexed to, uint256 value)",
+const POOL_LOGIC_ABI = [
+  "event TransactionExecuted(address pool, address manager, uint16 transactionType, uint256 time)",
 ];
 
-const getProvider = () => {
-  const rpc = process.env.NEXT_PUBLIC_POLYGON_RPC;
-  if (!rpc) throw new Error("NEXT_PUBLIC_POLYGON_RPC not configured");
-  return new ethers.providers.JsonRpcProvider(rpc);
+// Transaction types from dHEDGE contracts
+const TX_TYPE_EXCHANGE = 2;
+const TX_TYPE_NAMES: Record<number, string> = {
+  0: "Unknown",
+  1: "Add Liquidity",
+  2: "Exchange",
+  3: "Remove Liquidity",
+  4: "Stake",
+  5: "Unstake",
+  6: "Claim",
+  7: "Borrow",
+  8: "Repay",
+  9: "Supply",
+  10: "Withdraw",
 };
 
 export async function GET(
@@ -19,22 +29,56 @@ export async function GET(
   try {
     const poolAddress = params.address;
     const provider = getProvider();
-    const poolContract = new ethers.Contract(poolAddress, ERC20_ABI, provider);
+    const poolContract = new ethers.Contract(poolAddress, POOL_LOGIC_ABI, provider);
     
     const currentBlock = await provider.getBlockNumber();
-    const fromBlock = Math.max(0, currentBlock - 10000); // Last ~10k blocks
+    // Look back ~7 days of blocks (~300k blocks on Polygon with ~2s block time)
+    const fromBlock = Math.max(0, currentBlock - 300_000);
     
     try {
-      const transferFilter = poolContract.filters.Transfer();
-      const transfers = await poolContract.queryFilter(transferFilter, fromBlock, currentBlock);
+      // Query TransactionExecuted events (all types for now, filter for exchanges)
+      const txFilter = poolContract.filters.TransactionExecuted(poolAddress);
+      const events = await poolContract.queryFilter(txFilter, fromBlock, currentBlock);
       
-      const trades = transfers.slice(-20).map((event: any) => ({
-        timestamp: Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000, // Stub timestamp
-        fromAsset: "0x0000000000000000000000000000000000000000",
-        toAsset: "0x0000000000000000000000000000000000000000",
-        amount: ethers.utils.formatEther(event.args.value || 0),
-        txHash: event.transactionHash,
-      }));
+      // Filter for exchange transactions and map to trade format
+      const trades = await Promise.all(
+        events
+          .filter((event: any) => {
+            const txType = event.args?.transactionType;
+            // Include exchange and other trading-related types
+            return txType === TX_TYPE_EXCHANGE || txType === 1 || txType === 3;
+          })
+          .slice(-20)
+          .map(async (event: any) => {
+            const args = event.args;
+            const txType = Number(args?.transactionType || 0);
+            
+            // Use event timestamp from args, or fall back to block timestamp
+            let timestamp: number;
+            if (args?.time) {
+              timestamp = Number(args.time) * 1000;
+            } else {
+              try {
+                const block = await provider.getBlock(event.blockNumber);
+                timestamp = block.timestamp * 1000;
+              } catch {
+                timestamp = Date.now();
+              }
+            }
+            
+            return {
+              timestamp,
+              type: TX_TYPE_NAMES[txType] || `Type ${txType}`,
+              txType,
+              manager: args?.manager || ethers.constants.AddressZero,
+              txHash: event.transactionHash,
+              blockNumber: event.blockNumber,
+            };
+          })
+      );
+      
+      // Sort by timestamp descending (most recent first)
+      trades.sort((a, b) => b.timestamp - a.timestamp);
 
       return NextResponse.json({
         status: "success",

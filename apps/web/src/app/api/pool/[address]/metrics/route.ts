@@ -3,6 +3,11 @@ import { ethers } from "ethers";
 import { getDhedgeReadOnly, getProvider } from "@/lib/dhedge-readonly";
 import { formatUnits } from "ethers/lib/utils";
 import { fetchPriceUSD } from "@/lib/prices";
+import {
+  getHistoricalPrices,
+  findPriceAtTimestamp,
+  calculateRiskMetrics,
+} from "@/lib/historical-prices";
 
 const ERC20_ABI = [
   "function totalSupply() view returns (uint256)",
@@ -10,7 +15,6 @@ const ERC20_ABI = [
 
 const POOL_LOGIC_ABI = [
   "function poolManagerLogic() view returns (address)",
-  "event Deposit(address fundAddress,address investor,address assetDeposited,uint256 amountDeposited,uint256 valueDeposited,uint256 fundTokensReceived,uint256 totalInvestorFundTokens,uint256 fundValue,uint256 totalSupply,uint256 time)",
 ];
 
 const MANAGER_ABI = [
@@ -101,94 +105,6 @@ const getPoolFees = async (poolAddress: string): Promise<{ performanceFee: numbe
   }
 };
 
-// Historical price point from Deposit events
-type HistoricalPrice = {
-  timestamp: number;
-  price: number;
-  fundValue: number;
-  totalSupply: number;
-};
-
-// Query Deposit events to derive historical token prices
-const getHistoricalPrices = async (poolAddress: string): Promise<HistoricalPrice[]> => {
-  try {
-    const provider = getProvider();
-    const contract = new ethers.Contract(poolAddress, POOL_LOGIC_ABI, provider);
-    
-    const currentBlock = await provider.getBlockNumber();
-    // Look back ~30 days of blocks (assuming ~2s block time on Polygon = ~1.3M blocks)
-    // Limit to 500k blocks to avoid timeouts
-    const fromBlock = Math.max(0, currentBlock - 500_000);
-    
-    const depositFilter = contract.filters.Deposit();
-    const events = await contract.queryFilter(depositFilter, fromBlock, currentBlock);
-    
-    const prices: HistoricalPrice[] = [];
-    
-    for (const event of events) {
-      try {
-        const args = event.args;
-        if (!args) continue;
-        
-        // Extract values from event
-        const fundValue = args.fundValue;
-        const totalSupply = args.totalSupply;
-        const eventTime = args.time;
-        
-        if (fundValue && totalSupply && totalSupply.gt(0)) {
-          const price = Number(ethers.utils.formatEther(fundValue)) / 
-                       Number(ethers.utils.formatEther(totalSupply));
-          const timestamp = eventTime ? Number(eventTime) * 1000 : Date.now();
-          
-          prices.push({
-            timestamp,
-            price,
-            fundValue: Number(ethers.utils.formatEther(fundValue)),
-            totalSupply: Number(ethers.utils.formatEther(totalSupply)),
-          });
-        }
-      } catch (e) {
-        continue;
-      }
-    }
-    
-    // Sort by timestamp ascending
-    prices.sort((a, b) => a.timestamp - b.timestamp);
-    
-    return prices;
-  } catch (e) {
-    return [];
-  }
-};
-
-// Find price closest to a target timestamp
-const findPriceAtTimestamp = (
-  prices: HistoricalPrice[], 
-  targetTimestamp: number, 
-  currentPrice: number
-): number => {
-  if (prices.length === 0) return currentPrice;
-  
-  // Find the closest price point before or at the target timestamp
-  let closestPrice = currentPrice;
-  let closestTimeDiff = Infinity;
-  
-  for (const p of prices) {
-    const timeDiff = Math.abs(p.timestamp - targetTimestamp);
-    if (p.timestamp <= targetTimestamp && timeDiff < closestTimeDiff) {
-      closestTimeDiff = timeDiff;
-      closestPrice = p.price;
-    }
-  }
-  
-  // If no price before target, use the earliest available
-  if (closestTimeDiff === Infinity && prices.length > 0) {
-    closestPrice = prices[0].price;
-  }
-  
-  return closestPrice;
-};
-
 export async function GET(
   request: NextRequest,
   { params }: { params: { address: string } }
@@ -221,6 +137,9 @@ export async function GET(
     const returns1w = price1w > 0 ? ((sharePrice - price1w) / price1w) * 100 : 0;
     const returns1m = price1m > 0 ? ((sharePrice - price1m) / price1m) * 100 : 0;
     
+    // Calculate risk metrics
+    const riskMetrics = calculateRiskMetrics(historicalPrices);
+    
     // Risk score based on volatility (simplified: higher absolute returns = higher risk)
     const volatility = Math.max(Math.abs(returns24h), Math.abs(returns1w) / 2, Math.abs(returns1m) / 4);
     const riskScore = Math.round(Math.min(100, Math.max(0, volatility * 5)));
@@ -238,6 +157,8 @@ export async function GET(
         performanceFee,
         exitCooldown,
         historicalDataPoints: historicalPrices.length,
+        sortinoRatio: riskMetrics.sortinoRatio,
+        downsideVolatility: riskMetrics.downsideVolatility,
       },
     });
   } catch (err: any) {

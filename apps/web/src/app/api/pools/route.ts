@@ -3,6 +3,7 @@ import { ethers } from "ethers";
 import { getDhedgeReadOnly, getProvider } from "@/lib/dhedge-readonly";
 import { polygonConfig } from "@/config/polygon";
 import { fetchPriceUSD } from "@/lib/prices";
+import { getHistoricalPrices, findPriceAtTimestamp } from "@/lib/historical-prices";
 
 // Simple ERC20 ABI for name/symbol
 const ERC20_ABI = [
@@ -70,7 +71,6 @@ const fetchPoolsFromLogs = async (): Promise<string[]> => {
 // Helper to compute TVL from composition
 const computeTvl = async (composition: any[]): Promise<number> => {
   let total = 0;
-  const provider = getProvider();
   
   for (const item of composition) {
     try {
@@ -88,11 +88,44 @@ const computeTvl = async (composition: any[]): Promise<number> => {
   return total;
 };
 
+// Calculate returns for a pool (lighter version for list view)
+const getPoolReturnsLight = async (
+  poolAddress: string,
+  currentSharePrice: number
+): Promise<{ returns24h: number; returns1w: number; returns1m: number }> => {
+  try {
+    // Use a smaller block lookback for list view to improve performance
+    const historicalPrices = await getHistoricalPrices(poolAddress, 200_000);
+    
+    if (historicalPrices.length === 0) {
+      return { returns24h: 0, returns1w: 0, returns1m: 0 };
+    }
+    
+    const now = Date.now();
+    const oneDayAgo = now - 24 * 60 * 60 * 1000;
+    const oneWeekAgo = now - 7 * 24 * 60 * 60 * 1000;
+    const oneMonthAgo = now - 30 * 24 * 60 * 60 * 1000;
+    
+    const price24h = findPriceAtTimestamp(historicalPrices, oneDayAgo, currentSharePrice);
+    const price1w = findPriceAtTimestamp(historicalPrices, oneWeekAgo, currentSharePrice);
+    const price1m = findPriceAtTimestamp(historicalPrices, oneMonthAgo, currentSharePrice);
+    
+    const returns24h = price24h > 0 ? ((currentSharePrice - price24h) / price24h) * 100 : 0;
+    const returns1w = price1w > 0 ? ((currentSharePrice - price1w) / price1w) * 100 : 0;
+    const returns1m = price1m > 0 ? ((currentSharePrice - price1m) / price1m) * 100 : 0;
+    
+    return { returns24h, returns1w, returns1m };
+  } catch {
+    return { returns24h: 0, returns1w: 0, returns1m: 0 };
+  }
+};
+
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
     const search = searchParams.get("search");
     const network = searchParams.get("network");
+    const debug = searchParams.get("debug") === "1";
     
     // For now, only support Polygon (137). Network parameter is accepted but ignored.
     // This allows the frontend to pass it without errors.
@@ -104,8 +137,20 @@ export async function GET(request: NextRequest) {
     }
     
     let pools: string[] = [];
+    let debugInfo: Record<string, any> | undefined;
     try {
+      const provider = getProvider();
+      const latest = await provider.getBlockNumber();
+      const start = await getStartBlock(provider);
       pools = await fetchPoolsFromLogs();
+      if (debug) {
+        debugInfo = {
+          rpc: process.env.NEXT_PUBLIC_POLYGON_RPC || "missing",
+          startBlock: start,
+          latestBlock: latest,
+          poolsFromLogs: pools.length,
+        };
+      }
       if (!pools.length) {
         const factory = getFactory();
         pools = await factory.getDeployedFunds().catch(() => []);
@@ -134,11 +179,12 @@ export async function GET(request: NextRequest) {
             ? tvl / Number(ethers.utils.formatEther(totalSupply)) 
             : 1;
           
-          // Calculate returns and risk score (simplified - would use historical data in production)
-          const returns24h = 0; // Would need historical data
-          const returns1w = 0; // Would need historical data  
-          const returns1m = 0; // Would need historical data
-          const riskScore = Math.round(Math.min(100, Math.max(0, 50))); // Default medium risk
+          // Get historical returns
+          const { returns24h, returns1w, returns1m } = await getPoolReturnsLight(addr, sharePrice);
+          
+          // Risk score based on volatility
+          const volatility = Math.max(Math.abs(returns24h), Math.abs(returns1w) / 2, Math.abs(returns1m) / 4);
+          const riskScore = Math.round(Math.min(100, Math.max(0, volatility * 5)));
           
           // Calculate score: combination of TVL, returns, and risk
           const score = Math.round(
@@ -192,6 +238,7 @@ export async function GET(request: NextRequest) {
       status: "success", 
       pools: filtered,
       network: 137, // Always Polygon for now
+      ...(debugInfo ? { debug: debugInfo } : {}),
     });
   } catch (err: any) {
     // Log error for debugging but return a safe response

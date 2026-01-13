@@ -295,18 +295,34 @@ export default function PoolPage() {
               </div>
             </div>
 
-            {/* Sortino/Volatility placeholders */}
+            {/* Risk Analysis */}
             <div className="space-y-3">
               <h4 className="font-semibold text-muted">Risk Analysis</h4>
               <div className="bg-white/5 rounded-lg p-4">
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
                     <div className="text-muted mb-1">Sortino Ratio</div>
-                    <div className="font-semibold text-muted">Coming soon</div>
+                    <div className={`font-semibold ${
+                      metrics?.sortinoRatio !== undefined && metrics.sortinoRatio !== 0
+                        ? metrics.sortinoRatio > 0 ? "text-green-400" : "text-red-400"
+                        : "text-muted"
+                    }`}>
+                      {metrics?.sortinoRatio !== undefined && metrics.sortinoRatio !== 0
+                        ? metrics.sortinoRatio.toFixed(2)
+                        : metrics?.historicalDataPoints === 0
+                          ? "No data"
+                          : "—"}
+                    </div>
                   </div>
                   <div>
                     <div className="text-muted mb-1">Downside Volatility</div>
-                    <div className="font-semibold text-muted">Coming soon</div>
+                    <div className="font-semibold">
+                      {metrics?.downsideVolatility !== undefined && metrics.downsideVolatility !== 0
+                        ? `${metrics.downsideVolatility.toFixed(2)}%`
+                        : metrics?.historicalDataPoints === 0
+                          ? "No data"
+                          : "—"}
+                    </div>
                   </div>
                 </div>
               </div>

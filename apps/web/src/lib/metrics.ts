@@ -14,6 +14,9 @@ export type PoolMetrics = {
   entryFee?: number;
   exitFee?: number;
   exitCooldown: number;
+  historicalDataPoints?: number;
+  sortinoRatio?: number;
+  downsideVolatility?: number;
 };
 
 export type HistoryPoint = {
@@ -24,10 +27,11 @@ export type HistoryPoint = {
 
 export type Trade = {
   timestamp: number;
-  fromAsset: string;
-  toAsset: string;
-  amount: string;
+  type: string;
+  txType: number;
+  manager: string;
   txHash: string;
+  blockNumber: number;
 };
 
 export type UserDeposit = {
