@@ -215,10 +215,13 @@ export async function GET(request: NextRequest) {
     if (cachedPools) {
       pools = cachedPools;
     } else {
-      try {
-        pools = await fetchPoolsFromLogs();
-      } catch (e: any) {
-        logError = e?.message || "log_fetch_failed";
+      const disableLogScan = process.env.POOLS_DISABLE_LOG_SCAN === "1";
+      if (!disableLogScan) {
+        try {
+          pools = await fetchPoolsFromLogs();
+        } catch (e: any) {
+          logError = e?.message || "log_fetch_failed";
+        }
       }
     }
 
