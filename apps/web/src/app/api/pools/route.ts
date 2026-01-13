@@ -16,6 +16,7 @@ const ERC20_ABI = [
 // PoolFactory ABI (minimal)
 const FACTORY_ABI = [
   "function getDeployedFunds() view returns (address[])",
+  "event FundCreated(address fundAddress,bool isPoolPrivate,string fundName,string managerName,address manager,uint256 time,uint256 performanceFeeNumerator,uint256 managerFeeNumerator,uint256 managerFeeDenominator)",
 ];
 
 
@@ -23,6 +24,47 @@ const FACTORY_ABI = [
 const getFactory = () => {
   const provider = getProvider();
   return new ethers.Contract(polygonConfig.factoryAddress, FACTORY_ABI, provider);
+};
+
+const getFundCreatedTopic = () =>
+  new ethers.utils.Interface(FACTORY_ABI).getEventTopic("FundCreated");
+
+const getStartBlock = async (provider: ethers.providers.Provider) => {
+  const envStart = Number(process.env.POOL_FACTORY_START_BLOCK);
+  if (Number.isFinite(envStart) && envStart > 0) return envStart;
+  // Default to a recent window to avoid massive log scans on serverless.
+  const latest = await provider.getBlockNumber();
+  return Math.max(0, latest - 1_000_000);
+};
+
+const fetchPoolsFromLogs = async (): Promise<string[]> => {
+  const provider = getProvider();
+  const topic = getFundCreatedTopic();
+  const latest = await provider.getBlockNumber();
+  const start = await getStartBlock(provider);
+  const step = 50_000;
+  const pools: string[] = [];
+  const iface = new ethers.utils.Interface(FACTORY_ABI);
+
+  for (let from = start; from <= latest; from += step) {
+    const to = Math.min(from + step - 1, latest);
+    const logs = await provider.getLogs({
+      address: polygonConfig.factoryAddress,
+      fromBlock: from,
+      toBlock: to,
+      topics: [topic],
+    });
+    for (const log of logs) {
+      try {
+        const parsed = iface.parseLog(log);
+        const addr = (parsed?.args?.fundAddress as string) || "";
+        if (addr) pools.push(addr);
+      } catch {
+        // Ignore parse errors
+      }
+    }
+  }
+  return pools;
 };
 
 // Helper to compute TVL from composition
@@ -61,8 +103,17 @@ export async function GET(request: NextRequest) {
       );
     }
     
-    const factory = getFactory();
-    const pools: string[] = await factory.getDeployedFunds().catch(() => []);
+    let pools: string[] = [];
+    try {
+      pools = await fetchPoolsFromLogs();
+      if (!pools.length) {
+        const factory = getFactory();
+        pools = await factory.getDeployedFunds().catch(() => []);
+      }
+    } catch (_) {
+      const factory = getFactory();
+      pools = await factory.getDeployedFunds().catch(() => []);
+    }
     
     const provider = getProvider();
     const dhedge = getDhedgeReadOnly();

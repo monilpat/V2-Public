@@ -37,7 +37,11 @@ export type UserDeposit = {
   balance: string;
   sharePrice: number;
   value: number;
+  costBasis?: number;
+  totalDeposited?: number;
+  totalWithdrawn?: number;
   pnl: number;
+  pnlPercent?: number;
 };
 
 export type ProtocolStats = {
