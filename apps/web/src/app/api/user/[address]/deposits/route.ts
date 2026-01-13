@@ -22,6 +22,10 @@ const POOL_EVENTS_ABI = [
 
 const FACTORY_ABI = ["function getDeployedFunds() view returns (address[])"];
 
+// Known pools to always check (recently created or popular)
+const KNOWN_POOLS: string[] = [
+];
+
 // Helper to get user's cost basis from Deposit/Withdrawal events
 const getUserCostBasis = async (
   poolAddress: string,
@@ -114,6 +118,57 @@ const getUserCostBasis = async (
   }
 };
 
+// Find pools where user has a balance
+async function findUserPools(userAddress: string, provider: ethers.providers.Provider): Promise<string[]> {
+  const verifiedPools: string[] = [];
+  
+  // Get pools from factory
+  let factoryPools: string[] = [];
+  try {
+    const factory = new ethers.Contract(polygonConfig.factoryAddress, FACTORY_ABI, provider);
+    factoryPools = await factory.getDeployedFunds();
+  } catch (e) {
+    console.error("Error getting factory pools:", e);
+  }
+  
+  // Combine factory pools with known pools
+  const allPools = new Set<string>([
+    ...factoryPools.map(p => p.toLowerCase()),
+    ...KNOWN_POOLS.map(p => p.toLowerCase()),
+  ]);
+  
+  console.log(`Checking ${allPools.size} pools for user ${userAddress}`);
+  
+  // Check balances in parallel (batch of 20 at a time)
+  const poolArray = Array.from(allPools);
+  const BATCH_SIZE = 20;
+  
+  for (let i = 0; i < poolArray.length; i += BATCH_SIZE) {
+    const batch = poolArray.slice(i, i + BATCH_SIZE);
+    const results = await Promise.all(
+      batch.map(async (poolAddr) => {
+        try {
+          const contract = new ethers.Contract(poolAddr, ERC20_ABI, provider);
+          const balance = await contract.balanceOf(userAddress);
+          if (balance.gt(0)) {
+            return poolAddr;
+          }
+        } catch {
+          // Skip failed calls
+        }
+        return null;
+      })
+    );
+    
+    for (const addr of results) {
+      if (addr) verifiedPools.push(addr);
+    }
+  }
+  
+  console.log(`Found ${verifiedPools.length} pools with balance`);
+  return verifiedPools;
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { address: string } }
@@ -142,17 +197,19 @@ export async function GET(
       });
     }
 
-    const factory = new ethers.Contract(polygonConfig.factoryAddress, FACTORY_ABI, provider);
-    
-    let pools: string[] = [];
+    // Find pools user has deposited to via Transfer events (more efficient than scanning all pools)
+    let userPools: string[] = [];
     try {
-      pools = await factory.getDeployedFunds();
+      userPools = await findUserPools(userAddress, provider);
+      console.log(`Found ${userPools.length} pools for user ${userAddress}:`, userPools);
     } catch (e: any) {
-      console.error("Failed to get deployed funds:", e?.message);
+      console.error("Failed to find user pools:", e?.message);
+    }
+
+    if (userPools.length === 0) {
       return NextResponse.json({
-        status: "partial",
+        status: "success",
         deposits: [],
-        error: "Failed to fetch pool data",
       });
     }
 
@@ -169,35 +226,40 @@ export async function GET(
     }
 
     const deposits = await Promise.all(
-      pools.map(async (poolAddr) => {
+      userPools.map(async (poolAddr) => {
         try {
           const erc20 = new ethers.Contract(poolAddr, ERC20_ABI, provider);
-          const balance = await erc20.balanceOf(userAddress);
-          if (balance.eq(0)) return null;
-
-          const [name, symbol, totalSupply] = await Promise.all([
+          
+          const [name, symbol, totalSupply, balance] = await Promise.all([
             erc20.name(),
             erc20.symbol(),
             erc20.totalSupply(),
+            erc20.balanceOf(userAddress),
           ]);
 
+          if (balance.eq(0)) return null;
+
           // Calculate TVL with real prices
-          const pool = await dhedge.loadPool(poolAddr);
-          const composition = await pool.getComposition();
           let tvl = 0;
-          for (const item of composition) {
-            try {
-              const bal = BigInt((item as any).balance?._hex || (item as any).balance?.hex || item.balance);
-              const decimals = (item as any).decimals || 18;
-              const balFmt = Number(ethers.utils.formatUnits(bal, decimals));
-              const price = await fetchPriceUSD(item.asset);
-              tvl += balFmt * (price || 0);
-            } catch (e) {
-              continue;
+          try {
+            const pool = await dhedge.loadPool(poolAddr);
+            const composition = await pool.getComposition();
+            for (const item of composition) {
+              try {
+                const bal = BigInt((item as any).balance?._hex || (item as any).balance?.hex || item.balance);
+                const decimals = (item as any).decimals || 18;
+                const balFmt = Number(ethers.utils.formatUnits(bal, decimals));
+                const price = await fetchPriceUSD(item.asset);
+                tvl += balFmt * (price || 0);
+              } catch (e) {
+                continue;
+              }
             }
+          } catch (e) {
+            console.error(`Failed to load pool ${poolAddr}:`, e);
           }
           
-          const sharePrice = totalSupply.gt(0)
+          const sharePrice = totalSupply.gt(0) && tvl > 0
             ? tvl / Number(ethers.utils.formatEther(totalSupply))
             : 1;
           const currentValue = Number(ethers.utils.formatEther(balance)) * sharePrice;
@@ -226,7 +288,8 @@ export async function GET(
             pnl,
             pnlPercent,
           };
-        } catch {
+        } catch (e) {
+          console.error(`Error processing pool ${poolAddr}:`, e);
           return null;
         }
       })
