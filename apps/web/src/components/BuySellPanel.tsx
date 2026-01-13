@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useAccount, useWriteContract, useBalance, useReadContract, usePublicClient } from "wagmi";
 import { parseUnits, maxUint256, formatUnits } from "viem";
-import { poolLogicAbi, erc20Abi, easySwapperV2Abi } from "@/lib/abi";
+import { poolLogicAbi, poolManagerLogicAbi, poolFactoryAbi, erc20Abi, easySwapperV2Abi } from "@/lib/abi";
 import { polygonConfig } from "@/lib/polygon";
 
 interface Asset {
@@ -33,6 +33,11 @@ export function BuySellPanel({
   const { address, isConnected } = useAccount();
   const { writeContractAsync, isPending } = useWriteContract();
   const publicClient = usePublicClient();
+  const { data: poolManagerLogic } = useReadContract({
+    address: poolAddress as `0x${string}`,
+    abi: poolLogicAbi,
+    functionName: "poolManagerLogic",
+  });
   
   const [mode, setMode] = useState<Mode>("buy");
   const [selectedAsset, setSelectedAsset] = useState<string>(
@@ -89,6 +94,48 @@ export function BuySellPanel({
     return (depositQuote * BigInt(10_000 - slippageBps)) / 10_000n;
   }, [depositQuote, mode, slippageBps]);
 
+  const { data: isPrivatePool } = useReadContract({
+    address: poolAddress as `0x${string}`,
+    abi: poolLogicAbi,
+    functionName: "privatePool",
+  });
+
+  const { data: isDepositAsset } = useReadContract({
+    address: poolManagerLogic as `0x${string}`,
+    abi: poolManagerLogicAbi,
+    functionName: "isDepositAsset",
+    args: selectedAsset && mode === "buy"
+      ? [selectedAsset as `0x${string}`]
+      : undefined,
+    query: {
+      enabled: !!poolManagerLogic && !!selectedAsset && mode === "buy",
+    },
+  });
+
+  const { data: isMemberAllowed } = useReadContract({
+    address: poolManagerLogic as `0x${string}`,
+    abi: poolManagerLogicAbi,
+    functionName: "isMemberAllowed",
+    args: address && mode === "buy"
+      ? [address as `0x${string}`]
+      : undefined,
+    query: {
+      enabled: !!poolManagerLogic && !!address && mode === "buy",
+    },
+  });
+
+  const { data: isEasySwapperAllowed } = useReadContract({
+    address: polygonConfig.factoryAddress as `0x${string}`,
+    abi: poolFactoryAbi,
+    functionName: "customCooldownWhitelist",
+    args: polygonConfig.easySwapperV2Proxy
+      ? [polygonConfig.easySwapperV2Proxy as `0x${string}`]
+      : undefined,
+    query: {
+      enabled: !!polygonConfig.easySwapperV2Proxy,
+    },
+  });
+
   const handleMaxClick = () => {
     if (mode === "buy" && assetBalance) {
       setAmount(formatUnits(assetBalance.value, assetBalance.decimals));
@@ -108,6 +155,15 @@ export function BuySellPanel({
       if (mode === "buy") {
         if (!polygonConfig.easySwapperV2Proxy) {
           throw new Error("EasySwapperV2 proxy address is not configured.");
+        }
+        if (isDepositAsset === false) {
+          throw new Error("Selected asset is not a valid deposit asset for this vault.");
+        }
+        if (isPrivatePool && isMemberAllowed === false) {
+          throw new Error("This vault is private. Your address is not whitelisted.");
+        }
+        if (isEasySwapperAllowed === false) {
+          throw new Error("EasySwapperV2 is not authorized for this vault factory.");
         }
         // Step 1: Approve
         setTxStatus("approving");
@@ -373,6 +429,18 @@ export function BuySellPanel({
       {error && (
         <div className="text-sm text-red-400 bg-red-400/10 rounded-lg p-3">
           {error}
+          {txHash && (
+            <div className="mt-2">
+              <a
+                href={`https://polygonscan.com/tx/${txHash}`}
+                target="_blank"
+                rel="noreferrer"
+                className="text-red-300 hover:underline"
+              >
+                View failed transaction
+              </a>
+            </div>
+          )}
         </div>
       )}
       {success && (

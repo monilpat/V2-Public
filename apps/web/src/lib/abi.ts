@@ -7,6 +7,13 @@ export const poolLogicAbi = [
     "type": "function"
   },
   {
+    "inputs": [],
+    "name": "privatePool",
+    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [
       { "internalType": "address", "name": "_asset", "type": "address" },
       { "internalType": "uint256", "name": "_amount", "type": "uint256" }
@@ -68,6 +75,20 @@ export const easySwapperV2Abi = [
 ] as const;
 
 export const poolManagerLogicAbi = [
+  {
+    "inputs": [{ "internalType": "address", "name": "_asset", "type": "address" }],
+    "name": "isDepositAsset",
+    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [{ "internalType": "address", "name": "_member", "type": "address" }],
+    "name": "isMemberAllowed",
+    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
   {
     "inputs": [{ "internalType": "address", "name": "_newTrader", "type": "address" }],
     "name": "setTrader",
@@ -152,6 +173,13 @@ export const erc20Abi = [
 ] as const;
 
 export const poolFactoryAbi = [
+  {
+    "inputs": [{ "internalType": "address", "name": "", "type": "address" }],
+    "name": "customCooldownWhitelist",
+    "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
   {
     "inputs": [
       { "internalType": "bool", "name": "_privatePool", "type": "bool" },
