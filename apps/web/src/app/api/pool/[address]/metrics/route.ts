@@ -148,6 +148,7 @@ export async function GET(
       status: "success",
       metrics: {
         tvl,
+        sharePrice,
         returns24h,
         returns1w,
         returns1m,

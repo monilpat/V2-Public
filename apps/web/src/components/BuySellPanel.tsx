@@ -68,9 +68,6 @@ export function BuySellPanel({
 
   // Calculate expected output
   const inputAmount = parseFloat(amount) || 0;
-  const estimatedOutput = mode === "buy" 
-    ? inputAmount / sharePrice 
-    : inputAmount * sharePrice;
 
   const depositAmount = useMemo(() => {
     if (!amount || inputAmount <= 0) return null;
@@ -94,10 +91,28 @@ export function BuySellPanel({
     return (depositQuote * BigInt(10_000 - slippageBps)) / 10_000n;
   }, [depositQuote, mode, slippageBps]);
 
+  const estimatedOutput = useMemo(() => {
+    if (mode === "buy") {
+      if (!depositQuote) return 0;
+      return Number(formatUnits(depositQuote, 18));
+    }
+    return inputAmount * sharePrice;
+  }, [depositQuote, inputAmount, mode, sharePrice]);
+
   const { data: isPrivatePool } = useReadContract({
     address: poolAddress as `0x${string}`,
     abi: poolLogicAbi,
     functionName: "privatePool",
+  });
+
+  const { data: remainingCooldown } = useReadContract({
+    address: poolAddress as `0x${string}`,
+    abi: poolLogicAbi,
+    functionName: "getExitRemainingCooldown",
+    args: address ? [address as `0x${string}`] : undefined,
+    query: {
+      enabled: !!address,
+    },
   });
 
   const { data: isDepositAsset } = useReadContract({
@@ -234,6 +249,14 @@ export function BuySellPanel({
         onSuccess?.();
       } else {
         // Withdraw
+        if (remainingCooldown && remainingCooldown > 0n) {
+          const seconds = Number(remainingCooldown);
+          const minutes = Math.ceil(seconds / 60);
+          const hours = Math.floor(minutes / 60);
+          const mins = minutes % 60;
+          const eta = hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+          throw new Error(`Withdrawal locked. Available in ~${eta}.`);
+        }
         setTxStatus("withdrawing");
         const withdrawAmount = parseUnits(amount, 18); // Pool tokens are 18 decimals
         if (!publicClient) throw new Error("Wallet client unavailable");
@@ -439,6 +462,14 @@ export function BuySellPanel({
             <span>Network</span>
             <span>Polygon</span>
           </div>
+          {remainingCooldown && remainingCooldown > 0n && (
+            <div className="flex justify-between text-red-300">
+              <span>Withdraw Cooldown</span>
+              <span>
+                {Math.ceil(Number(remainingCooldown) / 60)} min remaining
+              </span>
+            </div>
+          )}
         </div>
       )}
 

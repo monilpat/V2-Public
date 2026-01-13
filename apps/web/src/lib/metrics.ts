@@ -3,6 +3,7 @@ import { API_BASE } from "./config";
 
 export type PoolMetrics = {
   tvl: number;
+  sharePrice?: number;
   returns24h: number;
   returns1w: number;
   returns1m: number;

@@ -14,6 +14,13 @@ export const poolLogicAbi = [
     "type": "function"
   },
   {
+    "inputs": [{ "internalType": "address", "name": "_depositor", "type": "address" }],
+    "name": "getExitRemainingCooldown",
+    "outputs": [{ "internalType": "uint256", "name": "remaining", "type": "uint256" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [
       { "internalType": "address", "name": "_asset", "type": "address" },
       { "internalType": "uint256", "name": "_amount", "type": "uint256" }

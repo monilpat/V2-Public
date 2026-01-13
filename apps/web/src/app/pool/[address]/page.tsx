@@ -113,12 +113,8 @@ export default function PoolPage() {
   // Get supported assets
   const supportedAssets = polygonConfig.assets.filter((a) => a.isDeposit);
 
-  // Calculate share price from metrics
-  const sharePrice = metrics?.tvl && composition ? 
-    metrics.tvl / (composition.reduce((sum, c) => {
-      const bal = Number(formatUnits(BigInt(c.balance?.hex || c.balance?._hex || c.balance || 0), 18));
-      return sum + bal;
-    }, 0) || 1) : 1;
+  // Use server-calculated share price (based on TVL / totalSupply)
+  const sharePrice = metrics?.sharePrice && metrics.sharePrice > 0 ? metrics.sharePrice : 1;
 
   // Tab counts
   const tabCounts = {
