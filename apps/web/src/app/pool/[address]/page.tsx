@@ -13,6 +13,7 @@ import { ReturnsCard } from "@/components/ReturnsCard";
 import { RiskScoreBadge } from "@/components/RiskScoreBadge";
 import { TradeHistoryTable } from "@/components/TradeHistoryTable";
 import { PoolTabs, PoolTab } from "@/components/PoolTabs";
+import { ChartTabs, ChartTab } from "@/components/ChartTabs";
 import { DepositorsTable } from "@/components/DepositorsTable";
 import { ActivityTable } from "@/components/ActivityTable";
 import { DepositsTable } from "@/components/DepositsTable";
@@ -51,6 +52,7 @@ export default function PoolPage() {
   });
   
   const [activeTab, setActiveTab] = useState<PoolTab>("depositors");
+  const [chartTab, setChartTab] = useState<ChartTab>("performance");
   const [feeDraft, setFeeDraft] = useState({
     perf: "",
     mgmt: "",
@@ -352,11 +354,27 @@ export default function PoolPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Content */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Performance Chart */}
+          {/* Chart Section with Tabs */}
           {history && history.length > 0 && (
             <div className="card p-5">
-              <h2 className="text-lg font-semibold mb-4">Performance Chart</h2>
-              <PerformanceChart data={history} />
+              <ChartTabs activeTab={chartTab} onTabChange={setChartTab} />
+              
+              {chartTab === "performance" && (
+                <PerformanceChart data={history} dataKey="price" />
+              )}
+              
+              {chartTab === "tradingview" && (
+                <div className="h-[300px] flex items-center justify-center text-muted">
+                  <div className="text-center">
+                    <div className="text-lg font-semibold mb-2">Trading View</div>
+                    <div className="text-sm">Advanced charting coming soon</div>
+                  </div>
+                </div>
+              )}
+              
+              {chartTab === "valuemanaged" && (
+                <PerformanceChart data={history} dataKey="tvl" />
+              )}
             </div>
           )}
 

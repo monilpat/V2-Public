@@ -83,6 +83,13 @@ export const poolManagerLogicAbi = [
     "type": "function"
   },
   {
+    "inputs": [],
+    "name": "getDepositAssets",
+    "outputs": [{ "internalType": "address[]", "name": "", "type": "address[]" }],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
     "inputs": [{ "internalType": "address", "name": "_member", "type": "address" }],
     "name": "isMemberAllowed",
     "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }],

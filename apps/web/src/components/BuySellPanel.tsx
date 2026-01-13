@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAccount, useWriteContract, useBalance, useReadContract, usePublicClient } from "wagmi";
 import { parseUnits, maxUint256, formatUnits } from "viem";
 import { poolLogicAbi, poolManagerLogicAbi, poolFactoryAbi, erc20Abi, easySwapperV2Abi } from "@/lib/abi";
@@ -135,6 +135,35 @@ export function BuySellPanel({
       enabled: !!polygonConfig.easySwapperV2Proxy,
     },
   });
+
+  const { data: depositAssets } = useReadContract({
+    address: poolManagerLogic as `0x${string}`,
+    abi: poolManagerLogicAbi,
+    functionName: "getDepositAssets",
+    query: {
+      enabled: !!poolManagerLogic && mode === "buy",
+    },
+  });
+
+  const allowedDepositAssets = useMemo(() => {
+    if (mode !== "buy") return supportedAssets;
+    if (depositAssets && depositAssets.length > 0) {
+      const allowed = new Set(depositAssets.map((a) => a.toLowerCase()));
+      return supportedAssets.filter((asset) => allowed.has(asset.address.toLowerCase()));
+    }
+    return supportedAssets;
+  }, [depositAssets, mode, supportedAssets]);
+
+  useEffect(() => {
+    if (mode !== "buy") return;
+    if (allowedDepositAssets.length === 0) return;
+    const isSelectedAllowed = allowedDepositAssets.some(
+      (asset) => asset.address.toLowerCase() === selectedAsset.toLowerCase()
+    );
+    if (!isSelectedAllowed) {
+      setSelectedAsset(allowedDepositAssets[0].address);
+    }
+  }, [allowedDepositAssets, mode, selectedAsset]);
 
   const handleMaxClick = () => {
     if (mode === "buy" && assetBalance) {
@@ -293,12 +322,17 @@ export function BuySellPanel({
               onChange={(e) => setSelectedAsset(e.target.value)}
               className="w-full bg-transparent border-none text-sm font-semibold focus:outline-none"
             >
-              {supportedAssets.filter(a => a.isDeposit !== false).map((asset) => (
+              {allowedDepositAssets.map((asset) => (
                 <option key={asset.address} value={asset.address} className="bg-gray-800">
                   {asset.symbol}
                 </option>
               ))}
             </select>
+            {allowedDepositAssets.length === 0 && (
+              <div className="text-xs text-red-300">
+                No deposit assets configured for this vault.
+              </div>
+            )}
           )}
           {mode === "sell" && (
             <div className="text-sm font-semibold">{poolSymbol}</div>
