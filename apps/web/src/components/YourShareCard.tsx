@@ -11,14 +11,6 @@ interface YourShareCardProps {
   sharePrice?: number;
 }
 
-declare global {
-  interface Window {
-    ethereum?: {
-      request: (args: { method: string; params?: unknown }) => Promise<unknown>;
-    };
-  }
-}
-
 export function YourShareCard({ 
   poolAddress, 
   poolSymbol = "POOL", 
@@ -44,14 +36,15 @@ export function YourShareCard({
   const valueUsd = balanceFormatted * sharePrice;
 
   const handleAddToWallet = async () => {
-    if (!window.ethereum) {
+    const ethereum = (window as { ethereum?: { request: (args: { method: string; params?: unknown }) => Promise<unknown> } }).ethereum;
+    if (!ethereum) {
       alert("No wallet detected. Please install MetaMask or another Web3 wallet.");
       return;
     }
     
     setAddStatus("adding");
     try {
-      const wasAdded = await window.ethereum.request({
+      const wasAdded = await ethereum.request({
         method: "wallet_watchAsset",
         params: {
           type: "ERC20",
