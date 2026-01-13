@@ -4,7 +4,7 @@ import { getDhedgeReadOnly, getProvider } from "@/lib/dhedge-readonly";
 import { polygonConfig } from "@/config/polygon";
 import { fetchPriceUSD } from "@/lib/prices";
 
-// Force dynamic to prevent static generation issues
+// Force dynamic to prevent static generation issues.
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
