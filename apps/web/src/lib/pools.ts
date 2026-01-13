@@ -19,7 +19,6 @@ export const fetchPools = async (network?: string): Promise<PoolMeta[]> => {
   try {
     const baseUrl = API_BASE.endsWith('/') ? API_BASE.slice(0, -1) : API_BASE;
     const res = await axios.get(`${baseUrl}/pools`, { 
-      params: { network: network || "137" },
       timeout: 60000, // 10 second timeout
     });
     if (res.data?.status === "success" && res.data?.pools?.length) {
