@@ -468,26 +468,15 @@ export default function PoolPage() {
 
           {/* Manager Actions (if connected) */}
           {isConnected && (
-            <div className="card p-5 space-y-4">
-              <h3 className="text-lg font-semibold">Manager Actions</h3>
+            <div className="card p-5 space-y-4 opacity-60">
+              <div className="flex items-center gap-2">
+                <h3 className="text-lg font-semibold">Manager Actions</h3>
+                <span className="text-xs text-muted">(Coming Soon)</span>
+              </div>
               
               <button
-                className="btn-ghost w-full"
-                disabled={!managerLogic}
-                onClick={async () => {
-                  if (!managerLogic) return;
-                  try {
-                    push("Minting fees...", "info");
-                    await writeContractAsync({
-                      address: managerLogic as `0x${string}`,
-                      abi: poolManagerLogicAbi,
-                      functionName: "mintManagerFee",
-                    });
-                    push("Fees minted to manager", "success");
-                  } catch (e: any) {
-                    push(e?.message || "Mint failed", "error");
-                  }
-                }}
+                className="btn-ghost w-full cursor-not-allowed"
+                disabled
               >
                 Mint Fees
               </button>
@@ -496,71 +485,35 @@ export default function PoolPage() {
                 <div className="text-sm font-semibold">Announce Fee Change</div>
                 <div className="grid grid-cols-2 gap-2">
                   <input
-                    className="bg-white/5 rounded px-2 py-1 text-xs"
+                    className="bg-white/5 rounded px-2 py-1 text-xs cursor-not-allowed"
                     placeholder="Perf fee (bps)"
-                    value={feeDraft.perf}
-                    onChange={(e) => setFeeDraft((s) => ({ ...s, perf: e.target.value }))}
+                    disabled
                   />
                   <input
-                    className="bg-white/5 rounded px-2 py-1 text-xs"
+                    className="bg-white/5 rounded px-2 py-1 text-xs cursor-not-allowed"
                     placeholder="Mgmt fee (bps)"
-                    value={feeDraft.mgmt}
-                    onChange={(e) => setFeeDraft((s) => ({ ...s, mgmt: e.target.value }))}
+                    disabled
                   />
                   <input
-                    className="bg-white/5 rounded px-2 py-1 text-xs"
+                    className="bg-white/5 rounded px-2 py-1 text-xs cursor-not-allowed"
                     placeholder="Entry fee (bps)"
-                    value={feeDraft.entry}
-                    onChange={(e) => setFeeDraft((s) => ({ ...s, entry: e.target.value }))}
+                    disabled
                   />
                   <input
-                    className="bg-white/5 rounded px-2 py-1 text-xs"
+                    className="bg-white/5 rounded px-2 py-1 text-xs cursor-not-allowed"
                     placeholder="Exit fee (bps)"
-                    value={feeDraft.exit}
-                    onChange={(e) => setFeeDraft((s) => ({ ...s, exit: e.target.value }))}
+                    disabled
                   />
                 </div>
                 <button
-                  className="btn-ghost w-full text-sm"
-                  disabled={!managerLogic}
-                  onClick={async () => {
-                    if (!managerLogic) return;
-                    try {
-                      const perf = BigInt(Number(feeDraft.perf || "0"));
-                      const mgmt = BigInt(Number(feeDraft.mgmt || "0"));
-                      const entry = BigInt(Number(feeDraft.entry || "0"));
-                      const exit = BigInt(Number(feeDraft.exit || "0"));
-                      push("Announcing fee change (14d delay)...", "info");
-                      await writeContractAsync({
-                        address: managerLogic as `0x${string}`,
-                        abi: poolManagerLogicAbi,
-                        functionName: "announceFeeIncrease",
-                        args: [perf, mgmt, entry, exit],
-                      });
-                      push("Fee change announced. Commit after delay.", "success");
-                    } catch (e: any) {
-                      push(e?.message || "Announce failed", "error");
-                    }
-                  }}
+                  className="btn-ghost w-full text-sm cursor-not-allowed"
+                  disabled
                 >
                   Announce Fees (14d)
                 </button>
                 <button
-                  className="btn-ghost w-full text-sm"
-                  disabled={!managerLogic}
-                  onClick={async () => {
-                    try {
-                      push("Committing fee change...", "info");
-                      await writeContractAsync({
-                        address: managerLogic as `0x${string}`,
-                        abi: poolManagerLogicAbi,
-                        functionName: "commitFeeIncrease",
-                      });
-                      push("Fee change committed", "success");
-                    } catch (e: any) {
-                      push(e?.message || "Commit failed", "error");
-                    }
-                  }}
+                  className="btn-ghost w-full text-sm cursor-not-allowed"
+                  disabled
                 >
                   Commit Fees
                 </button>
@@ -568,22 +521,6 @@ export default function PoolPage() {
             </div>
           )}
 
-          {/* Supported Deposit Assets */}
-          <div className="card p-5">
-            <h3 className="text-lg font-semibold mb-4">Supported Assets</h3>
-            <div className="space-y-2 max-h-60 overflow-y-auto">
-              {supportedAssets.slice(0, 10).map((asset) => (
-                <div key={asset.address} className="bg-white/5 rounded-lg px-3 py-2 text-sm">
-                  <div className="font-semibold">{asset.symbol}</div>
-                </div>
-              ))}
-              {supportedAssets.length > 10 && (
-                <div className="text-sm text-muted text-center">
-                  +{supportedAssets.length - 10} more assets
-                </div>
-              )}
-            </div>
-          </div>
         </div>
       </div>
       </div>
