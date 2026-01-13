@@ -39,6 +39,34 @@ export const poolLogicAbi = [
   },
 ] as const;
 
+export const easySwapperV2Abi = [
+  {
+    inputs: [
+      { internalType: "address", name: "_dHedgeVault", type: "address" },
+      { internalType: "address", name: "_vaultDepositToken", type: "address" },
+      { internalType: "uint256", name: "_depositAmount", type: "uint256" }
+    ],
+    name: "depositQuote",
+    outputs: [
+      { internalType: "uint256", name: "expectedAmountReceived", type: "uint256" }
+    ],
+    stateMutability: "view",
+    type: "function"
+  },
+  {
+    inputs: [
+      { internalType: "address", name: "_dHedgeVault", type: "address" },
+      { internalType: "address", name: "_vaultDepositToken", type: "address" },
+      { internalType: "uint256", name: "_depositAmount", type: "uint256" },
+      { internalType: "uint256", name: "_expectedAmountReceived", type: "uint256" }
+    ],
+    name: "deposit",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function"
+  }
+] as const;
+
 export const poolManagerLogicAbi = [
   {
     "inputs": [{ "internalType": "address", "name": "_newTrader", "type": "address" }],

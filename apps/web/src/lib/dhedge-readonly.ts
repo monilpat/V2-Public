@@ -1,25 +1,27 @@
 import { ethers } from "ethers";
 import { Dhedge, Network } from "@dhedge/v2-sdk";
 
+const POLYGON_NETWORK = { chainId: 137, name: "matic" } as const;
+let cachedProvider: ethers.providers.StaticJsonRpcProvider | null = null;
+
 const getProvider = () => {
-  const rpc =
-   'https://polygon-mainnet.g.alchemy.com/v2/rQzQUwgUS3lDBKJSUlN6e';
-  if (!rpc) {
-    console.error("Polygon RPC not configured: no env found");
-    throw new Error("Polygon RPC not configured");
-  }
-  // Log first part only to avoid leaking full URL/token
-  console.log("Using Polygon RPC:", `${rpc.slice(0, 32)}...`);
+  if (cachedProvider) return cachedProvider;
+
+  const rpc ='https://polygon-mainnet.g.alchemy.com/v2/rQzQUwgUS3lDBKJSUlN6e';
+
   // Avoid fetch referrer issues in Node by skipping fetch setup
   const connection: ethers.utils.ConnectionInfo = {
     url: rpc,
     skipFetchSetup: true,
-    timeout: 60_000
+    timeout: 20_000,
   };
-  return new ethers.providers.StaticJsonRpcProvider(connection, {
-    name: "matic",
-    chainId: 137,
-  });
+
+  cachedProvider = new ethers.providers.StaticJsonRpcProvider(
+    connection,
+    POLYGON_NETWORK
+  );
+
+  return cachedProvider;
 };
 
 // Create a dummy wallet for read-only operations (Dhedge SDK requires Wallet type)

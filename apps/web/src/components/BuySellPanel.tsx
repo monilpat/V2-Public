@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
-import { useAccount, useWriteContract, useBalance } from "wagmi";
+import { useMemo, useState } from "react";
+import { useAccount, useWriteContract, useBalance, useReadContract, usePublicClient } from "wagmi";
 import { parseUnits, maxUint256, formatUnits } from "viem";
-import { poolLogicAbi, erc20Abi } from "@/lib/abi";
-import { assetMeta } from "@/lib/prices";
+import { poolLogicAbi, erc20Abi, easySwapperV2Abi } from "@/lib/abi";
+import { polygonConfig } from "@/lib/polygon";
 
 interface Asset {
   address: string;
@@ -32,6 +32,7 @@ export function BuySellPanel({
 }: BuySellPanelProps) {
   const { address, isConnected } = useAccount();
   const { writeContractAsync, isPending } = useWriteContract();
+  const publicClient = usePublicClient();
   
   const [mode, setMode] = useState<Mode>("buy");
   const [selectedAsset, setSelectedAsset] = useState<string>(
@@ -41,6 +42,9 @@ export function BuySellPanel({
   const [showDetails, setShowDetails] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [txStatus, setTxStatus] = useState<"idle" | "approving" | "depositing" | "withdrawing">("idle");
+  const [txHash, setTxHash] = useState<`0x${string}` | null>(null);
+  const [slippageBps, setSlippageBps] = useState<number>(50); // 0.5%
 
   // Get user balance for selected asset
   const { data: assetBalance } = useBalance({
@@ -63,6 +67,28 @@ export function BuySellPanel({
     ? inputAmount / sharePrice 
     : inputAmount * sharePrice;
 
+  const depositAmount = useMemo(() => {
+    if (!amount || inputAmount <= 0) return null;
+    return parseUnits(amount, decimals);
+  }, [amount, decimals, inputAmount]);
+
+  const { data: depositQuote } = useReadContract({
+    address: polygonConfig.easySwapperV2Proxy as `0x${string}`,
+    abi: easySwapperV2Abi,
+    functionName: "depositQuote",
+    args: depositAmount && mode === "buy"
+      ? [poolAddress as `0x${string}`, selectedAsset as `0x${string}`, depositAmount]
+      : undefined,
+    query: {
+      enabled: !!depositAmount && mode === "buy",
+    },
+  });
+
+  const expectedAmountReceived = useMemo(() => {
+    if (!depositQuote || mode !== "buy") return 0n;
+    return (depositQuote * BigInt(10_000 - slippageBps)) / 10_000n;
+  }, [depositQuote, mode, slippageBps]);
+
   const handleMaxClick = () => {
     if (mode === "buy" && assetBalance) {
       setAmount(formatUnits(assetBalance.value, assetBalance.decimals));
@@ -76,38 +102,54 @@ export function BuySellPanel({
     
     setError(null);
     setSuccess(null);
+    setTxHash(null);
 
     try {
       if (mode === "buy") {
         // Step 1: Approve
-        await writeContractAsync({
+        setTxStatus("approving");
+        const approveHash = await writeContractAsync({
           address: selectedAsset as `0x${string}`,
           abi: erc20Abi,
           functionName: "approve",
-          args: [poolAddress as `0x${string}`, maxUint256],
+          args: [polygonConfig.easySwapperV2Proxy as `0x${string}`, maxUint256],
         });
+        if (!publicClient) throw new Error("Wallet client unavailable");
+        await publicClient.waitForTransactionReceipt({ hash: approveHash });
 
         // Step 2: Deposit
-        const depositAmount = parseUnits(amount, decimals);
-        await writeContractAsync({
-          address: poolAddress as `0x${string}`,
-          abi: poolLogicAbi,
+        if (!depositAmount) throw new Error("Invalid deposit amount");
+        setTxStatus("depositing");
+        const depositHash = await writeContractAsync({
+          address: polygonConfig.easySwapperV2Proxy as `0x${string}`,
+          abi: easySwapperV2Abi,
           functionName: "deposit",
-          args: [selectedAsset as `0x${string}`, depositAmount],
+          args: [
+            poolAddress as `0x${string}`,
+            selectedAsset as `0x${string}`,
+            depositAmount,
+            expectedAmountReceived,
+          ],
         });
+        setTxHash(depositHash);
+        await publicClient.waitForTransactionReceipt({ hash: depositHash });
 
         setSuccess("Deposit successful!");
         setAmount("");
         onSuccess?.();
       } else {
         // Withdraw
+        setTxStatus("withdrawing");
         const withdrawAmount = parseUnits(amount, 18); // Pool tokens are 18 decimals
-        await writeContractAsync({
+        const withdrawHash = await writeContractAsync({
           address: poolAddress as `0x${string}`,
           abi: poolLogicAbi,
           functionName: "withdraw",
           args: [withdrawAmount],
         });
+        setTxHash(withdrawHash);
+        if (!publicClient) throw new Error("Wallet client unavailable");
+        await publicClient.waitForTransactionReceipt({ hash: withdrawHash });
 
         setSuccess("Withdrawal successful!");
         setAmount("");
@@ -115,6 +157,8 @@ export function BuySellPanel({
       }
     } catch (err: any) {
       setError(err?.message || "Transaction failed");
+    } finally {
+      setTxStatus("idle");
     }
   };
 
@@ -265,8 +309,23 @@ export function BuySellPanel({
           </div>
           <div className="flex justify-between">
             <span>Slippage Tolerance</span>
-            <span>0.5%</span>
+            <span>{(slippageBps / 100).toFixed(2)}%</span>
           </div>
+          {mode === "buy" && (
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-muted">Set Slippage</span>
+              <select
+                value={slippageBps}
+                onChange={(e) => setSlippageBps(Number(e.target.value))}
+                className="bg-transparent border border-white/10 rounded-md px-2 py-1 text-sm"
+              >
+                <option value={10} className="bg-gray-800">0.10%</option>
+                <option value={50} className="bg-gray-800">0.50%</option>
+                <option value={100} className="bg-gray-800">1.00%</option>
+                <option value={200} className="bg-gray-800">2.00%</option>
+              </select>
+            </div>
+          )}
           <div className="flex justify-between">
             <span>Network</span>
             <span>Polygon</span>
@@ -275,6 +334,25 @@ export function BuySellPanel({
       )}
 
       {/* Error/Success Messages */}
+      {txStatus !== "idle" && (
+        <div className="text-sm text-blue-300 bg-blue-400/10 rounded-lg p-3">
+          {txStatus === "approving" && "Approving token spend..."}
+          {txStatus === "depositing" && "Deposit submitted. Waiting for confirmation..."}
+          {txStatus === "withdrawing" && "Withdrawal submitted. Waiting for confirmation..."}
+          {txHash && (
+            <div className="mt-2">
+              <a
+                href={`https://polygonscan.com/tx/${txHash}`}
+                target="_blank"
+                rel="noreferrer"
+                className="text-accent2 hover:underline"
+              >
+                View on Polygonscan
+              </a>
+            </div>
+          )}
+        </div>
+      )}
       {error && (
         <div className="text-sm text-red-400 bg-red-400/10 rounded-lg p-3">
           {error}
@@ -289,15 +367,15 @@ export function BuySellPanel({
       {/* Action Button */}
       <button
         onClick={handleSubmit}
-        disabled={isPending || !amount || inputAmount <= 0}
+        disabled={isPending || txStatus !== "idle" || !amount || inputAmount <= 0}
         className={`w-full py-3 px-4 rounded-lg font-semibold transition-colors ${
           mode === "buy"
             ? "bg-green-500 hover:bg-green-600 disabled:bg-green-500/50"
             : "bg-red-500 hover:bg-red-600 disabled:bg-red-500/50"
         } disabled:cursor-not-allowed`}
       >
-        {isPending 
-          ? "Processing..." 
+        {isPending || txStatus !== "idle"
+          ? "Processing..."
           : mode === "buy" 
             ? "Buy" 
             : "Sell"

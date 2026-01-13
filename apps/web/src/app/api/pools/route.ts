@@ -35,9 +35,13 @@ const getFundCreatedTopic = () =>
 const getStartBlock = async (provider: ethers.providers.Provider) => {
   const envStart = Number(process.env.POOL_FACTORY_START_BLOCK);
   if (Number.isFinite(envStart) && envStart > 0) return envStart;
+  const envLookback = Number(process.env.POOL_FACTORY_LOOKBACK_BLOCKS);
   // Default to a recent window to avoid massive log scans on serverless.
   const latest = await provider.getBlockNumber();
-  return Math.max(0, latest - 1_000_000);
+  if (Number.isFinite(envLookback) && envLookback > 0) {
+    return Math.max(0, latest - envLookback);
+  }
+  return Math.max(0, latest - 200_000);
 };
 
 const fetchPoolsFromLogs = async (): Promise<string[]> => {
@@ -169,8 +173,11 @@ export async function GET(request: NextRequest) {
     }
 
     if (debug) {
+      const redactedRpc = resolvedRpc
+        ? resolvedRpc.replace(/\/v2\/.*/, "/v2/<redacted>")
+        : "";
       debugInfo = {
-        rpc: resolvedRpc,
+        rpc: redactedRpc,
         env: {
           NEXT_PUBLIC_POLYGON_RPC: Boolean(process.env.NEXT_PUBLIC_POLYGON_RPC),
           POLYGON_URL: Boolean(process.env.POLYGON_URL),
@@ -179,14 +186,20 @@ export async function GET(request: NextRequest) {
         startBlock: start,
         latestBlock: latest,
         poolsFromLogs: pools.length,
+        poolsFetched: 0,
         logError,
         fallbackError,
       };
     }
     
     const dhedge = getDhedgeReadOnly();
+    const maxPools = Number(process.env.POOLS_API_MAX_POOLS || "0");
+    const poolsToFetch = maxPools > 0 ? pools.slice(0, maxPools) : pools;
+    if (debug && debugInfo) {
+      debugInfo.poolsFetched = poolsToFetch.length;
+    }
     const results = await Promise.all(
-      pools.map(async (addr) => {
+      poolsToFetch.map(async (addr) => {
         try {
           const contract = new ethers.Contract(addr, ERC20_ABI, provider);
           const [name, symbol] = await Promise.all([contract.name(), contract.symbol()]);
