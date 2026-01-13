@@ -32,6 +32,35 @@ const getFactory = () => {
 const getFundCreatedTopic = () =>
   new ethers.utils.Interface(FACTORY_ABI).getEventTopic("FundCreated");
 
+type PoolsCache = {
+  fetchedAt: number;
+  pools: string[];
+};
+
+type PoolStats = {
+  address: string;
+  name: string;
+  symbol: string;
+  tvl: number;
+  returns24h: number;
+  returns1w: number;
+  returns1m: number;
+  riskScore: number;
+  score?: number;
+  network: number;
+};
+
+type PoolStatsCache = {
+  fetchedAt: number;
+  value: PoolStats;
+};
+
+const POOLS_CACHE_TTL_MS = Number(process.env.POOLS_CACHE_TTL_MS || "300000");
+const POOL_STATS_CACHE_TTL_MS = Number(process.env.POOL_STATS_CACHE_TTL_MS || "300000");
+
+let poolsCache: PoolsCache | null = null;
+const poolStatsCache = new Map<string, PoolStatsCache>();
+
 const getStartBlock = async (provider: ethers.providers.Provider) => {
   const envStart = Number(process.env.POOL_FACTORY_START_BLOCK);
   if (Number.isFinite(envStart) && envStart > 0) return envStart;
@@ -94,6 +123,27 @@ const computeTvl = async (composition: any[]): Promise<number> => {
   return total;
 };
 
+const getCachedPools = (): string[] | null => {
+  if (!poolsCache) return null;
+  if (Date.now() - poolsCache.fetchedAt > POOLS_CACHE_TTL_MS) return null;
+  return poolsCache.pools;
+};
+
+const setCachedPools = (pools: string[]) => {
+  poolsCache = { fetchedAt: Date.now(), pools };
+};
+
+const getCachedPoolStats = (address: string): PoolStats | null => {
+  const cached = poolStatsCache.get(address);
+  if (!cached) return null;
+  if (Date.now() - cached.fetchedAt > POOL_STATS_CACHE_TTL_MS) return null;
+  return cached.value;
+};
+
+const setCachedPoolStats = (address: string, value: PoolStats) => {
+  poolStatsCache.set(address, { fetchedAt: Date.now(), value });
+};
+
 // Calculate returns for a pool (lighter version for list view)
 const getPoolReturnsLight = async (
   poolAddress: string,
@@ -132,6 +182,10 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get("search");
     const network = searchParams.get("network");
     const debug = searchParams.get("debug") === "1";
+    const limitParam = Number(searchParams.get("limit") || "10");
+    const offsetParam = Number(searchParams.get("offset") || "0");
+    const limit = Number.isFinite(limitParam) ? Math.max(1, Math.min(100, limitParam)) : 10;
+    const offset = Number.isFinite(offsetParam) ? Math.max(0, offsetParam) : 0;
     
     // For now, only support Polygon (137). Network parameter is accepted but ignored.
     // This allows the frontend to pass it without errors.
@@ -157,10 +211,15 @@ export async function GET(request: NextRequest) {
     const start = await getStartBlock(provider);
     let logError: string | undefined;
     let fallbackError: string | undefined;
-    try {
-      pools = await fetchPoolsFromLogs();
-    } catch (e: any) {
-      logError = e?.message || "log_fetch_failed";
+    const cachedPools = getCachedPools();
+    if (cachedPools) {
+      pools = cachedPools;
+    } else {
+      try {
+        pools = await fetchPoolsFromLogs();
+      } catch (e: any) {
+        logError = e?.message || "log_fetch_failed";
+      }
     }
 
     if (!pools.length) {
@@ -170,6 +229,9 @@ export async function GET(request: NextRequest) {
       } catch (e: any) {
         fallbackError = e?.message || "factory_fallback_failed";
       }
+    }
+    if (pools.length) {
+      setCachedPools(pools);
     }
 
     if (debug) {
@@ -187,6 +249,10 @@ export async function GET(request: NextRequest) {
         latestBlock: latest,
         poolsFromLogs: pools.length,
         poolsFetched: 0,
+        limit,
+        offset,
+        poolsCacheAgeMs: poolsCache ? Date.now() - poolsCache.fetchedAt : null,
+        poolStatsCacheSize: poolStatsCache.size,
         logError,
         fallbackError,
       };
@@ -194,13 +260,17 @@ export async function GET(request: NextRequest) {
     
     const dhedge = getDhedgeReadOnly();
     const maxPools = Number(process.env.POOLS_API_MAX_POOLS || "0");
-    const poolsToFetch = maxPools > 0 ? pools.slice(0, maxPools) : pools;
+    const limitedPools = maxPools > 0 ? pools.slice(0, maxPools) : pools;
+    const poolsToFetch = limitedPools.slice(offset, offset + limit);
     if (debug && debugInfo) {
       debugInfo.poolsFetched = poolsToFetch.length;
     }
     const results = await Promise.all(
       poolsToFetch.map(async (addr) => {
         try {
+          const cached = getCachedPoolStats(addr);
+          if (cached) return cached;
+
           const contract = new ethers.Contract(addr, ERC20_ABI, provider);
           const [name, symbol] = await Promise.all([contract.name(), contract.symbol()]);
           
@@ -225,7 +295,7 @@ export async function GET(request: NextRequest) {
               (100 - riskScore) * 0.2 // Risk component (lower risk = higher score)
             ))
           );
-          return {
+          const value = {
             address: addr,
             name,
             symbol,
@@ -237,8 +307,10 @@ export async function GET(request: NextRequest) {
             score,
             network: 137,
           };
+          setCachedPoolStats(addr, value);
+          return value;
         } catch (_) {
-          return {
+          const value = {
             address: addr,
             name: addr,
             symbol: "POOL",
@@ -247,7 +319,10 @@ export async function GET(request: NextRequest) {
             returns1w: 0,
             returns1m: 0,
             riskScore: 50,
+            network: 137,
           };
+          setCachedPoolStats(addr, value);
+          return value;
         }
       })
     );
