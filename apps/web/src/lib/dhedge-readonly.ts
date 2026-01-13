@@ -2,8 +2,11 @@ import { ethers } from "ethers";
 import { Dhedge, Network } from "@dhedge/v2-sdk";
 
 const getProvider = () => {
-  const rpc = process.env.NEXT_PUBLIC_POLYGON_RPC;
-  if (!rpc) throw new Error("NEXT_PUBLIC_POLYGON_RPC not configured");
+  const rpc =
+    process.env.NEXT_PUBLIC_POLYGON_RPC ||
+    process.env.POLYGON_URL ||
+    process.env.NEXT_PUBLIC_RPC_URL;
+  if (!rpc) throw new Error("Polygon RPC not configured");
   return new ethers.providers.JsonRpcProvider(rpc);
 };
 
