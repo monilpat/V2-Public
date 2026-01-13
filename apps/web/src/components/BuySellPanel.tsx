@@ -317,22 +317,24 @@ export function BuySellPanel({
         
         <div className="bg-white/5 rounded-lg p-3 space-y-2">
           {mode === "buy" && (
-            <select
-              value={selectedAsset}
-              onChange={(e) => setSelectedAsset(e.target.value)}
-              className="w-full bg-transparent border-none text-sm font-semibold focus:outline-none"
-            >
-              {allowedDepositAssets.map((asset) => (
-                <option key={asset.address} value={asset.address} className="bg-gray-800">
-                  {asset.symbol}
-                </option>
-              ))}
-            </select>
-            {allowedDepositAssets.length === 0 && (
-              <div className="text-xs text-red-300">
-                No deposit assets configured for this vault.
-              </div>
-            )}
+            <>
+              <select
+                value={selectedAsset}
+                onChange={(e) => setSelectedAsset(e.target.value)}
+                className="w-full bg-transparent border-none text-sm font-semibold focus:outline-none"
+              >
+                {allowedDepositAssets.map((asset) => (
+                  <option key={asset.address} value={asset.address} className="bg-gray-800">
+                    {asset.symbol}
+                  </option>
+                ))}
+              </select>
+              {allowedDepositAssets.length === 0 && (
+                <div className="text-xs text-red-300">
+                  No deposit assets configured for this vault.
+                </div>
+              )}
+            </>
           )}
           {mode === "sell" && (
             <div className="text-sm font-semibold">{poolSymbol}</div>
