@@ -18,7 +18,7 @@ export const fetchPriceUSD = async (address: string): Promise<number> => {
       `https://api.coingecko.com/api/v3/simple/token_price/${COINGECKO_PLATFORM}`,
       { 
         params: { contract_addresses: address, vs_currencies: "usd" },
-        timeout: 5000,
+        timeout: 60000,
       }
     );
     const price = resp.data?.[lower]?.usd;
