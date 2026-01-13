@@ -14,6 +14,7 @@ const getProvider = () => {
   const connection: ethers.utils.ConnectionInfo = {
     url: rpc,
     skipFetchSetup: true,
+    timeout: 60_000
   };
   return new ethers.providers.StaticJsonRpcProvider(connection, {
     name: "matic",
