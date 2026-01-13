@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { useAccount, useWriteContract } from "wagmi";
+import { useAccount, useWriteContract, usePublicClient } from "wagmi";
+import { useRouter } from "next/navigation";
+import { decodeEventLog } from "viem";
 import { StepIndicator } from "./StepIndicator";
 import { VaultInfoStep, type VaultInfoData } from "./VaultInfoStep";
 import { VaultAssetsStep, type Asset } from "./VaultAssetsStep";
@@ -29,6 +31,8 @@ export function CreateVaultModal({
 }: CreateVaultModalProps) {
   const { address } = useAccount();
   const { writeContractAsync, isPending } = useWriteContract();
+  const publicClient = usePublicClient();
+  const router = useRouter();
   const { Toast, push, clear } = useToast();
   
   const [currentStep, setCurrentStep] = useState(1);
@@ -164,14 +168,46 @@ export function CreateVaultModal({
         gas: 7_000_000n,
       });
 
+      setStatus("Waiting for confirmation...");
+      
+      // Wait for receipt and extract the created fund address
+      if (!publicClient) {
+        throw new Error("Public client not available");
+      }
+      
+      const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash });
+      
+      // Find the FundCreated event in the logs
+      let fundAddress: string | null = null;
+      for (const log of receipt.logs) {
+        try {
+          const decoded = decodeEventLog({
+            abi: poolFactoryAbi,
+            data: log.data,
+            topics: log.topics,
+          });
+          if (decoded.eventName === "FundCreated" && decoded.args) {
+            fundAddress = (decoded.args as { fundAddress: string }).fundAddress;
+            break;
+          }
+        } catch {
+          // Not a FundCreated event, continue
+        }
+      }
+
       clear();
       push(`Vault "${vaultInfo.vaultName}" created successfully!`, "success");
-      setStatus(`Vault created! Tx: ${txHash}`);
       
-      // Close modal after success
-      setTimeout(() => {
+      // Redirect to the new pool page
+      if (fundAddress) {
         onClose();
-      }, 2000);
+        router.push(`/pool/${fundAddress}`);
+      } else {
+        setStatus(`Vault created! Tx: ${txHash}`);
+        setTimeout(() => {
+          onClose();
+        }, 2000);
+      }
     } catch (err: any) {
       setError(err?.message || "Failed to create vault");
       setStatus(null);
