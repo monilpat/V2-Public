@@ -170,7 +170,6 @@ export async function GET(request: NextRequest) {
       };
     }
     
-    const provider = getProvider();
     const dhedge = getDhedgeReadOnly();
     
     const results = await Promise.all(
