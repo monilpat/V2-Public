@@ -26,6 +26,7 @@ export function YourShareCard({
   sharePrice = 1 
 }: YourShareCardProps) {
   const { address, isConnected } = useAccount();
+  const [addStatus, setAddStatus] = useState<"idle" | "adding" | "success" | "error">("idle");
   
   // Get user balance of pool tokens
   const { data: balance, isLoading } = useBalance({
@@ -36,8 +37,6 @@ export function YourShareCard({
   if (!isConnected) {
     return null;
   }
-
-  const [addStatus, setAddStatus] = useState<"idle" | "adding" | "success" | "error">("idle");
   
   const balanceFormatted = balance 
     ? parseFloat(formatUnits(balance.value, balance.decimals))
