@@ -69,10 +69,11 @@ function StatDisplay({ value, label }: { value: string; label: string }) {
 }
 
 export default function Page() {
-  const { data: pools } = useQuery({
+  const { data: poolsResponse } = useQuery({
     queryKey: ["pools", "all"],
     queryFn: () => fetchPools("137", { limit: 20, offset: 0 }),
   });
+  const pools = poolsResponse?.pools ?? [];
 
   // Get top vaults by TVL
   const featuredVaults = useMemo(() => {

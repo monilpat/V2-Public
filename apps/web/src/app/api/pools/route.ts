@@ -264,6 +264,7 @@ export async function GET(request: NextRequest) {
     const dhedge = getDhedgeReadOnly();
     const maxPools = Number(process.env.POOLS_API_MAX_POOLS || "0");
     const limitedPools = maxPools > 0 ? pools.slice(0, maxPools) : pools;
+    const totalPools = limitedPools.length;
     const poolsToFetch = limitedPools.slice(offset, offset + limit);
     if (debug && debugInfo) {
       debugInfo.poolsFetched = poolsToFetch.length;
@@ -345,6 +346,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ 
       status: "success", 
       pools: filtered,
+      total: totalPools,
       network: 137, // Always Polygon for now
       ...(debugInfo ? { debug: debugInfo } : {}),
     });

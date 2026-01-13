@@ -18,7 +18,7 @@ export type PoolMeta = {
 export const fetchPools = async (
   network?: string,
   options?: { limit?: number; offset?: number }
-): Promise<PoolMeta[]> => {
+): Promise<{ pools: PoolMeta[]; total?: number }> => {
   try {
     const baseUrl = API_BASE.endsWith('/') ? API_BASE.slice(0, -1) : API_BASE;
     const params: Record<string, number | string> = {};
@@ -29,20 +29,25 @@ export const fetchPools = async (
       timeout: 60000, // 10 second timeout
     });
     if (res.data?.status === "success" && res.data?.pools?.length) {
-      return res.data.pools.map((p: any) => ({
-        ...p,
-        network: p.network || 137,
-      }));
+      return {
+        pools: res.data.pools.map((p: any) => ({
+          ...p,
+          network: p.network || 137,
+        })),
+        total: typeof res.data.total === "number" ? res.data.total : undefined,
+      };
     }
   } catch (e) {
     // Log error but don't throw - fallback to config
     console.warn("Failed to fetch pools from API, using fallback:", e);
   }
   // Fallback to config pools
-  return polygonConfig.pools.map((p: any) => ({
-    address: p.address || p,
-    name: p.name || p.address || p,
-    symbol: p.symbol || "POOL",
-    network: 137,
-  }));
+  return {
+    pools: polygonConfig.pools.map((p: any) => ({
+      address: p.address || p,
+      name: p.name || p.address || p,
+      symbol: p.symbol || "POOL",
+      network: 137,
+    })),
+  };
 };
