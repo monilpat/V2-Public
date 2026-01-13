@@ -138,12 +138,19 @@ export async function GET(request: NextRequest) {
     
     let pools: string[] = [];
     let debugInfo: Record<string, any> | undefined;
+    const resolvedRpc = 'https://polygon-mainnet.g.alchemy.com/v2/rQzQUwgUS3lDBKJSUlN6e';
+
     const provider = getProvider();
+    if (debug) {
+      console.log(
+        "Pools debug RPC resolved:",
+        resolvedRpc ? `${resolvedRpc.slice(0, 32)}...` : "missing"
+      );
+    }
     const latest = await provider.getBlockNumber();
     const start = await getStartBlock(provider);
     let logError: string | undefined;
     let fallbackError: string | undefined;
-
     try {
       pools = await fetchPoolsFromLogs();
     } catch (e: any) {
@@ -161,7 +168,12 @@ export async function GET(request: NextRequest) {
 
     if (debug) {
       debugInfo = {
-        rpc: process.env.NEXT_PUBLIC_POLYGON_RPC || "missing",
+        rpc: resolvedRpc,
+        env: {
+          NEXT_PUBLIC_POLYGON_RPC: Boolean(process.env.NEXT_PUBLIC_POLYGON_RPC),
+          POLYGON_URL: Boolean(process.env.POLYGON_URL),
+          NEXT_PUBLIC_RPC_URL: Boolean(process.env.NEXT_PUBLIC_RPC_URL),
+        },
         startBlock: start,
         latestBlock: latest,
         poolsFromLogs: pools.length,
@@ -171,7 +183,6 @@ export async function GET(request: NextRequest) {
     }
     
     const dhedge = getDhedgeReadOnly();
-    
     const results = await Promise.all(
       pools.map(async (addr) => {
         try {
@@ -181,20 +192,16 @@ export async function GET(request: NextRequest) {
           const pool = await dhedge.loadPool(addr);
           const composition = await pool.getComposition();
           const tvl = await computeTvl(composition);
-          
           // Get total supply for share price calculation
           const totalSupply = await contract.totalSupply().catch(() => ethers.BigNumber.from(0));
           const sharePrice = tvl > 0 && totalSupply.gt(0) 
             ? tvl / Number(ethers.utils.formatEther(totalSupply)) 
             : 1;
-          
           // Get historical returns
           const { returns24h, returns1w, returns1m } = await getPoolReturnsLight(addr, sharePrice);
-          
           // Risk score based on volatility
           const volatility = Math.max(Math.abs(returns24h), Math.abs(returns1w) / 2, Math.abs(returns1m) / 4);
           const riskScore = Math.round(Math.min(100, Math.max(0, volatility * 5)));
-          
           // Calculate score: combination of TVL, returns, and risk
           const score = Math.round(
             Math.min(1000, Math.max(0,
@@ -203,7 +210,6 @@ export async function GET(request: NextRequest) {
               (100 - riskScore) * 0.2 // Risk component (lower risk = higher score)
             ))
           );
-
           return {
             address: addr,
             name,

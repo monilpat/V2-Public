@@ -1,25 +1,20 @@
 import { ethers, Network } from "@dhedge/v2-sdk";
+import { resolveRpcUrl } from "./utils/network";
 
 require("dotenv").config();
 
-export const wallet = (network: Network): ethers.Wallet => {
-  let url;
-  switch (network) {
-    case Network.POLYGON:
-      url = `https://polygon-mainnet.infura.io/v3/${process.env.INFURA_PROJECT_ID}`;
-      break;
-    case Network.OPTIMISM:
-      url = `https://optimism-mainnet.infura.io/v3/${process.env.INFURA_PROJECT_ID}`;
-      break;
-    case Network.ARBITRUM:
-      url = `https://arbitrum-mainnet.infura.io/v3/${process.env.INFURA_PROJECT_ID}`;
-      break;
-    default:
-      throw Error("network not supported");
-  }
+const resolvePrivateKey = () =>
+  process.env.PRIVATE_KEY ||
+  process.env.POLYGON_PRIVATE_KEY ||
+  process.env.OPTIMISM_PRIVATE_KEY ||
+  process.env.ARBITRUM_PRIVATE_KEY;
 
-  return new ethers.Wallet(
-    process.env.PRIVATE_KEY as string,
-    new ethers.providers.JsonRpcProvider(url)
-  );
+export const wallet = (network: Network): ethers.Wallet => {
+  const url = resolveRpcUrl(network);
+  if (!url) throw Error("RPC not configured for network");
+
+  const pk = resolvePrivateKey();
+  if (!pk) throw Error("PRIVATE_KEY not configured");
+
+  return new ethers.Wallet(pk, new ethers.providers.JsonRpcProvider(url));
 };

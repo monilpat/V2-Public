@@ -3,19 +3,33 @@ import { Dhedge, Network } from "@dhedge/v2-sdk";
 
 const getProvider = () => {
   const rpc =
-    process.env.NEXT_PUBLIC_POLYGON_RPC ||
-    process.env.POLYGON_URL ||
-    process.env.NEXT_PUBLIC_RPC_URL;
-  if (!rpc) throw new Error("Polygon RPC not configured");
-  return new ethers.providers.JsonRpcProvider(rpc);
+   'https://polygon-mainnet.g.alchemy.com/v2/rQzQUwgUS3lDBKJSUlN6e';
+  if (!rpc) {
+    console.error("Polygon RPC not configured: no env found");
+    throw new Error("Polygon RPC not configured");
+  }
+  // Log first part only to avoid leaking full URL/token
+  console.log("Using Polygon RPC:", `${rpc.slice(0, 32)}...`);
+  // Avoid fetch referrer issues in Node by skipping fetch setup
+  const connection: ethers.utils.ConnectionInfo = {
+    url: rpc,
+    skipFetchSetup: true,
+  };
+  return new ethers.providers.StaticJsonRpcProvider(connection, {
+    name: "matic",
+    chainId: 137,
+  });
 };
 
 // Create a dummy wallet for read-only operations (Dhedge SDK requires Wallet type)
 // This wallet is never used to sign transactions, only for read operations
 export const getReadOnlyWallet = (): ethers.Wallet => {
   const provider = getProvider();
-  // Use a dummy private key - only used for read operations, never signs
-  return new ethers.Wallet("0x0000000000000000000000000000000000000000000000000000000000000001", provider);
+  // Deterministic dummy key for read-only use; never used to sign
+  return new ethers.Wallet(
+    "0x0000000000000000000000000000000000000000000000000000000000000001",
+    provider
+  );
 };
 
 // Helper to create Dhedge instance for read-only operations
