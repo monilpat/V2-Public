@@ -1,7 +1,8 @@
 "use client";
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { fetchPools, PoolMeta } from "@/lib/pools";
+import { useAccount } from "wagmi";
+import { fetchPools, fetchManagedPools, PoolMeta } from "@/lib/pools";
 import { VaultCard } from "@/components/VaultCard";
 import { Nav } from "@/components/nav";
 import { NetworkSelector } from "@/components/network-selector";
@@ -21,6 +22,8 @@ export default function ExplorePage() {
   const [page, setPage] = useState(0);
   const pageSize = 10;
 
+  const { address, isConnected } = useAccount();
+
   const { data: poolsResponse, isLoading } = useQuery({
     queryKey: ["pools", chain, page, pageSize],
     queryFn: () => fetchPools(chain, { limit: pageSize, offset: page * pageSize }),
@@ -28,6 +31,14 @@ export default function ExplorePage() {
   const pools = poolsResponse?.pools ?? [];
   const totalPools =
     typeof poolsResponse?.total === "number" ? poolsResponse.total : pools.length;
+
+  // Fetch user's managed/created vaults when wallet is connected
+  const { data: managedPoolsResponse, isLoading: isLoadingManaged } = useQuery({
+    queryKey: ["managedPools", address],
+    queryFn: () => fetchManagedPools(address!),
+    enabled: isConnected && !!address,
+  });
+  const managedPools = managedPoolsResponse?.pools ?? [];
 
   const filteredAndSortedPools = useMemo(() => {
     let filtered = pools || [];
@@ -73,6 +84,35 @@ export default function ExplorePage() {
         <header className="flex flex-col gap-2">
           <h1 className="text-3xl font-bold">Explore</h1>
         </header>
+
+      {/* My Vaults Section - Only shown when wallet is connected */}
+      {isConnected && (
+        <section>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold">My Vaults</h2>
+            <span className="text-sm text-muted">
+              Vaults you created
+            </span>
+          </div>
+
+          {isLoadingManaged ? (
+            <div className="text-muted text-sm">Loading your vaults...</div>
+          ) : managedPools.length > 0 ? (
+            <div className="grid gap-4 md:grid-cols-3">
+              {managedPools.map((pool: PoolMeta) => (
+                <VaultCard key={pool.address} pool={pool} />
+              ))}
+            </div>
+          ) : (
+            <div className="card p-8 text-center">
+              <div className="text-muted">You haven&apos;t created any vaults yet</div>
+              <Link href="/manage" className="text-accent2 text-sm mt-2 inline-block hover:underline">
+                Create your first vault →
+              </Link>
+            </div>
+          )}
+        </section>
+      )}
 
       {/* Top Vaults Section */}
       <section>

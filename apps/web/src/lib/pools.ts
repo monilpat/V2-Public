@@ -51,3 +51,27 @@ export const fetchPools = async (
     })),
   };
 };
+
+export const fetchManagedPools = async (
+  managerAddress: string
+): Promise<{ pools: PoolMeta[]; error?: string }> => {
+  try {
+    const baseUrl = API_BASE.endsWith("/") ? API_BASE.slice(0, -1) : API_BASE;
+    const res = await axios.get(`${baseUrl}/user/${managerAddress}/managed-pools`, {
+      timeout: 30000,
+    });
+    if (res.data?.status === "success" || res.data?.status === "partial") {
+      return {
+        pools: (res.data.pools || []).map((p: any) => ({
+          ...p,
+          network: p.network || 137,
+        })),
+        error: res.data.error,
+      };
+    }
+    return { pools: [], error: res.data?.msg || res.data?.error };
+  } catch (e: any) {
+    console.warn("Failed to fetch managed pools:", e?.message);
+    return { pools: [], error: e?.message || "Failed to fetch managed pools" };
+  }
+};
